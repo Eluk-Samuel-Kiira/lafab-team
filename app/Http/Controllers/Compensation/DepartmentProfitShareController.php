@@ -178,6 +178,12 @@ class DepartmentProfitShareController extends Controller
      */
     public function calculate(Request $request)
     {
+        if (!auth()->user()->can('create profit share periods')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to create profit share periods.'
+            ]);
+        }
         $request->validate([
             'financial_year' => 'required|string|max:10',
             'department_id' => 'nullable|exists:departments,id',
@@ -315,6 +321,13 @@ class DepartmentProfitShareController extends Controller
      */
     public function update(Request $request, $id)
     {
+        if (!auth()->user()->can('edit profit share periods')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit profit share periods.'
+            ]);
+        }
+
         $request->validate([
             'profit_share_percentage' => 'required|numeric|min:0|max:100',
             'status' => 'required|in:pending,calculated,distributed,closed',
@@ -360,6 +373,13 @@ class DepartmentProfitShareController extends Controller
      */
     public function destroy($id)
     {
+        
+        if (!auth()->user()->can('delete profit share periods')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to delete profit share periods.'
+            ]);
+        }
         try {
             $period = DepartmentProfitShare::findOrFail($id);
             

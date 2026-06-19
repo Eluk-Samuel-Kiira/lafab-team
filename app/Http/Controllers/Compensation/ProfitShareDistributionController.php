@@ -259,6 +259,13 @@ class ProfitShareDistributionController extends Controller
      */
     public function store(Request $request)
     {
+        if (!auth()->user()->can('create profit share')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to create profit shares.'
+            ]);
+        }
+
         $request->validate([
             'department_profit_share_id' => 'required|exists:department_profit_shares,id',
             'user_id' => 'required|exists:users,id',
@@ -357,6 +364,13 @@ class ProfitShareDistributionController extends Controller
      */
     public function bulkDistribute(Request $request)
     {
+        if (!auth()->user()->can('distribute profit share')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to distribute profit shares.'
+            ]);
+        }
+
         $request->validate([
             'department_profit_share_id' => 'required|exists:department_profit_shares,id',
             'distribution_date' => 'required|date',
@@ -552,6 +566,13 @@ class ProfitShareDistributionController extends Controller
      */
     public function update(Request $request, $id)
     {
+        if (!auth()->user()->can('edit profit share')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit profit shares.'
+            ]);
+        }
+
         $request->validate([
             'units_held' => 'required|integer|min:0',
             'vested_units' => 'required|integer|min:0',
@@ -626,6 +647,14 @@ class ProfitShareDistributionController extends Controller
      */
     public function markAsPaid(Request $request, $id)
     {
+        
+        if (!auth()->user()->can('pay profit share')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to pay profit shares.'
+            ]);
+        }
+
         $request->validate([
             'payment_method_id' => 'required|exists:payment_methods,id',
         ]);
@@ -718,6 +747,14 @@ class ProfitShareDistributionController extends Controller
      */
     public function getMarkAsPaidData($id)
     {
+        
+        if (!auth()->user()->can('pay profit share')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to pay profit shares.'
+            ]);
+        }
+
         try {
             $distribution = ProfitShareDistribution::with(['user', 'department'])
                 ->findOrFail($id);
@@ -763,6 +800,14 @@ class ProfitShareDistributionController extends Controller
      */
     public function destroy($id)
     {
+        
+        if (!auth()->user()->can('delete profit share')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to delete profit shares.'
+            ]);
+        }
+
         try {
             $distribution = ProfitShareDistribution::findOrFail($id);
             

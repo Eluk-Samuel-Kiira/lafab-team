@@ -29,6 +29,8 @@ class DatabaseSeeder extends Seeder
             ExpenseSeeder::class, 
             SalaryStructureSeeder::class,   
             EmployeeSalarySeeder::class,
+            EmployeeSalarySeeder::class,
+
         ]);
     }
 }

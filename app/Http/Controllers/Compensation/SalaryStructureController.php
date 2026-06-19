@@ -149,6 +149,13 @@ class SalaryStructureController extends Controller
      */
     public function store(Request $request)
     {
+        if (!auth()->user()->can('create salary structure')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to create salary structure.'
+            ]);
+        }
+
         $request->validate([
             'job_title' => 'required|string|max:255',
             'role_code' => 'required|string|max:50|unique:salary_structures,role_code',
@@ -295,6 +302,14 @@ class SalaryStructureController extends Controller
      */
     public function update(Request $request, $id)
     {
+        
+        if (!auth()->user()->can('edit salary structure')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit salary structure.'
+            ]);
+        }
+
         $request->validate([
             'job_title' => 'required|string|max:255',
             'role_code' => 'required|string|max:50|unique:salary_structures,role_code,' . $id,
@@ -375,6 +390,14 @@ class SalaryStructureController extends Controller
      */
     public function toggleStatus($id)
     {
+        
+        if (!auth()->user()->can('edit salary structure')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit salary structure.'
+            ]);
+        }
+
         try {
             $structure = SalaryStructure::findOrFail($id);
             $structure->is_active = !$structure->is_active;
@@ -400,6 +423,14 @@ class SalaryStructureController extends Controller
      */
     public function destroy($id)
     {
+        
+        if (!auth()->user()->can('delete salary structure')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to delete salary structure.'
+            ]);
+        }
+
         try {
             $structure = SalaryStructure::findOrFail($id);
             

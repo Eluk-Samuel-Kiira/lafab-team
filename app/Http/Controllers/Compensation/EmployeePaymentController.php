@@ -178,6 +178,14 @@ class EmployeePaymentController extends Controller
      */
     public function store(Request $request)
     {
+        
+        if (!auth()->user()->can('create salary payments')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to create salary payments.'
+            ]);
+        }
+
         $request->validate([
             'user_id' => 'required|exists:users,id',
             'employee_salary_id' => 'nullable|exists:employee_salaries,id',
@@ -296,6 +304,14 @@ class EmployeePaymentController extends Controller
      */
     public function update(Request $request, $id)
     {
+         
+        if (!auth()->user()->can('edit salary payments')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit salary payments.'
+            ]);
+        }
+
         $request->validate([
             'payment_date' => 'required|date',
             'payment_type' => 'required|in:salary,bonus,commission,advance,reimbursement',
@@ -379,6 +395,13 @@ class EmployeePaymentController extends Controller
      */
     public function approve(Request $request, $id)
     {
+        if (!auth()->user()->can('approve salary payments')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to approve salary payments.'
+            ]);
+        }
+
         try {
             DB::beginTransaction();
 
@@ -414,6 +437,13 @@ class EmployeePaymentController extends Controller
      */
     public function pay(Request $request, $id)
     {
+        if (!auth()->user()->can('process salary payments')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to process salary payments.'
+            ]);
+        }
+
         $request->validate([
             'payment_method_id' => 'required|exists:payment_methods,id',
         ]);
@@ -496,6 +526,14 @@ class EmployeePaymentController extends Controller
      */
     public function cancel(Request $request, $id)
     {
+        
+        if (!auth()->user()->can('cancel salary payments')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to cancel salary payments.'
+            ]);
+        }
+
         try {
             $payment = EmployeePayment::findOrFail($id);
             
@@ -526,6 +564,13 @@ class EmployeePaymentController extends Controller
      */
     public function reject(Request $request, $id)
     {
+        
+        if (!auth()->user()->can('reject salary payments')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to reject salary payments.'
+            ]);
+        }
         try {
             $payment = EmployeePayment::findOrFail($id);
             
@@ -556,6 +601,12 @@ class EmployeePaymentController extends Controller
      */
     public function destroy($id)
     {
+        if (!auth()->user()->can('delete salary payments')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to delete salary payments.'
+            ]);
+        }
         try {
             $payment = EmployeePayment::findOrFail($id);
             

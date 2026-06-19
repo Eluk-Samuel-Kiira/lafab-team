@@ -18,6 +18,7 @@
 @endsection
 
 @section('content')
+@can('view profit share')
 <div class="card card-flush">
     <div class="card-header mt-6">
         <div class="card-title">
@@ -57,17 +58,21 @@
         </div>
         <div class="card-toolbar">
             <div class="d-flex gap-3">
+            @can('create profit share')
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#kt_modal_add_distribution">
                     <i class="ki-duotone ki-plus-square fs-2">
                         <span class="path1"></span><span class="path2"></span><span class="path3"></span>
                     </i> New Distribution
                 </button>
+            @endcan
+            @can('distribute profit share')
                 <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#kt_modal_bulk_distribution">
                     <i class="ki-duotone ki-copy fs-2">
                         <span class="path1"></span><span class="path2"></span>
                     </i> Bulk Distribute
                 </button>
             </div>
+            @endcan
         </div>
     </div>
 
@@ -510,6 +515,7 @@
     </div>
 </div>
 
+@endcan
 @endsection
 
 @push('scripts')

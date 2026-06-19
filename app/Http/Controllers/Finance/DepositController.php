@@ -146,6 +146,14 @@ class DepositController extends Controller
      */
     public function storeDeposit(Request $request)
     {
+            
+        if (!auth()->user()->can('create deposits')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to create deposits.'
+            ]);
+        }
+
         try {
             $validated = $request->validate([
                 'payment_method_id' => 'required|exists:payment_methods,id',
@@ -221,6 +229,14 @@ class DepositController extends Controller
      */
     public function approveDeposit($id)
     {
+           
+        if (!auth()->user()->can('approve deposits')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to approve deposits.'
+            ]);
+        }
+
         try {
             DB::beginTransaction();
             
@@ -304,6 +320,14 @@ class DepositController extends Controller
      */
     public function cancelDeposit($id)
     {
+          
+        if (!auth()->user()->can('cancel deposits')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to cancel deposits.'
+            ]);
+        }
+
         try {
             $deposit = Deposit::findOrFail($id);
             
@@ -335,6 +359,14 @@ class DepositController extends Controller
      */
     public function deleteDeposit($id)
     {
+         
+        if (!auth()->user()->can('delete deposits')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to delete deposits.'
+            ]);
+        }
+
         try {
             $deposit = Deposit::findOrFail($id);
             

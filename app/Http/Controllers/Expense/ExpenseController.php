@@ -165,6 +165,14 @@ class ExpenseController extends Controller
      */
     public function store(Request $request)
     {
+        
+        if (!auth()->user()->can('create expenses')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to create expenses.'
+            ]);
+        }
+
         $request->validate([
             'date' => 'required|date',
             'description' => 'required|string|max:500',
@@ -268,6 +276,13 @@ class ExpenseController extends Controller
      */
     public function update(Request $request, $id)
     {
+        if (!auth()->user()->can('edit expenses')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit expenses.'
+            ]);
+        }
+
         $request->validate([
             'date' => 'required|date',
             'description' => 'required|string|max:500',
@@ -336,6 +351,13 @@ class ExpenseController extends Controller
      */
     public function approve(Request $request, $id)
     {
+        if (!auth()->user()->can('approve expenses')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to approve expenses.'
+            ]);
+        }
+
         try {
             DB::beginTransaction();
 
@@ -371,6 +393,13 @@ class ExpenseController extends Controller
      */
     public function pay(Request $request, $id)
     {
+        if (!auth()->user()->can('pay expenses')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to pay expenses.'
+            ]);
+        }
+
         $request->validate([
             'payment_method_id' => 'required|exists:payment_methods,id',
         ]);
@@ -453,6 +482,13 @@ class ExpenseController extends Controller
      */
     public function cancel(Request $request, $id)
     {
+        
+        if (!auth()->user()->can('cancel expenses')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to cancel expenses.'
+            ]);
+        }
         try {
             $expense = Expense::findOrFail($id);
             
@@ -483,6 +519,12 @@ class ExpenseController extends Controller
      */
     public function reject(Request $request, $id)
     {
+        if (!auth()->user()->can('reject expenses')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to reject expenses.'
+            ]);
+        }
         try {
             $expense = Expense::findOrFail($id);
             
@@ -513,6 +555,13 @@ class ExpenseController extends Controller
      */
     public function destroy($id)
     {
+        if (!auth()->user()->can('delete expenses')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to delete expenses.'
+            ]);
+        }
+
         try {
             $expense = Expense::findOrFail($id);
             

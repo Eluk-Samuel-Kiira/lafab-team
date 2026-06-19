@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Compensation;
 use App\Http\Controllers\Controller;
 use App\Models\PerformanceReview;
 use App\Models\EmployeeSalary;
-use App\Models\User;
+use App\Models\{ User, Employee };
 use App\Models\Department;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -172,6 +172,13 @@ class PerformanceReviewController extends Controller
      */
     public function store(Request $request)
     {
+        if (!auth()->user()->can('create performance reviews')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to create performance reviews.'
+            ]);
+        }
+
         $request->validate([
             'user_id' => 'required|exists:users,id',
             'employee_salary_id' => 'nullable|exists:employee_salaries,id',
@@ -270,6 +277,13 @@ class PerformanceReviewController extends Controller
      */
     public function update(Request $request, $id)
     {
+        if (!auth()->user()->can('edit performance reviews')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit performance reviews.'
+            ]);
+        }
+
         $request->validate([
             'review_period' => 'required|in:monthly,quarterly,annual',
             'review_date' => 'required|date',
@@ -330,6 +344,13 @@ class PerformanceReviewController extends Controller
      */
     public function approve($id)
     {
+        if (!auth()->user()->can('approve performance reviews')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to approve performance reviews.'
+            ]);
+        }
+
         try {
             DB::beginTransaction();
 
@@ -359,6 +380,13 @@ class PerformanceReviewController extends Controller
      */
     public function destroy($id)
     {
+        if (!auth()->user()->can('delete performance reviews')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to delete performance reviews.'
+            ]);
+        }
+
         try {
             $review = PerformanceReview::findOrFail($id);
             $review->delete();

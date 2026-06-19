@@ -18,6 +18,7 @@
 @endsection
 
 @section('content')
+@can('view employees')
 <div class="card card-flush">
     <div class="card-header mt-6">
         <div class="card-title">
@@ -58,6 +59,7 @@
                 </div>
             </div>
         </div>
+        @can('create employees')
         <div class="card-toolbar">
             <button type="button" class="btn btn-primary me-3" data-bs-toggle="modal" data-bs-target="#kt_modal_add_employee">
                 <i class="ki-duotone ki-plus-square fs-2">
@@ -65,6 +67,7 @@
                 </i> New Employee
             </button>
         </div>
+        @endcan
     </div>
     
     <div class="card-body pt-0">
@@ -421,6 +424,7 @@
         </div>
     </div>
 </div>
+@endcan
 @endsection
 
 @push('scripts')
