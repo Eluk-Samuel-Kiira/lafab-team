@@ -1,0 +1,458 @@
+<div id="kt_app_sidebar" class="app-sidebar flex-column"
+    data-kt-drawer="true"
+    data-kt-drawer-name="app-sidebar"
+    data-kt-drawer-activate="{default: true, lg: false}"
+    data-kt-drawer-overlay="true"
+    data-kt-drawer-width="225px"
+    data-kt-drawer-direction="start"
+    data-kt-drawer-toggle="#kt_app_sidebar_mobile_toggle">
+
+    {{-- Logo --}}
+    <div class="app-sidebar-logo px-6" id="kt_app_sidebar_logo">
+        <a href="{{ route('admin.dashboard') }}">
+            <img alt="Logo" src="{{ asset('lafab.png') }}" class="app-sidebar-logo-default" style="height:50px; width:210px;" />
+            <img alt="Logo" src="{{ asset('fav.png') }}" class="app-sidebar-logo-minimize" style="height:30px; width:30px;" />
+        </a>
+        <div id="kt_app_sidebar_toggle"
+            class="app-sidebar-toggle btn btn-icon btn-shadow btn-sm btn-color-muted btn-active-color-primary h-30px w-30px position-absolute top-50 start-100 translate-middle rotate"
+            data-kt-toggle="true"
+            data-kt-toggle-state="active"
+            data-kt-toggle-target="body"
+            data-kt-toggle-name="app-sidebar-minimize">
+            <i class="ki-duotone ki-black-left-line fs-3 rotate-180">
+                <span class="path1"></span><span class="path2"></span>
+            </i>
+        </div>
+    </div>
+
+    {{-- Menu --}}
+    <div class="app-sidebar-menu overflow-hidden flex-column-fluid">
+        <div id="kt_app_sidebar_menu_wrapper" class="app-sidebar-wrapper">
+            <div id="kt_app_sidebar_menu_scroll" class="scroll-y my-5 mx-3"
+                data-kt-scroll="true"
+                data-kt-scroll-activate="true"
+                data-kt-scroll-height="auto"
+                data-kt-scroll-dependencies="#kt_app_sidebar_logo, #kt_app_sidebar_footer"
+                data-kt-scroll-wrappers="#kt_app_sidebar_menu"
+                data-kt-scroll-offset="5px"
+                data-kt-scroll-save-state="true">
+
+                <div class="menu menu-column menu-rounded menu-sub-indention fw-semibold fs-6"
+                    id="#kt_app_sidebar_menu"
+                    data-kt-menu="true"
+                    data-kt-menu-expand="false">
+
+                    {{-- Dashboard --}}
+                    <div class="menu-item">
+                        <a class="menu-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}">
+                            <span class="menu-icon">
+                                <i class="ki-duotone ki-element-11 fs-2">
+                                    <span class="path1"></span><span class="path2"></span>
+                                    <span class="path3"></span><span class="path4"></span>
+                                </i>
+                            </span>
+                            <span class="menu-title">Dashboard</span>
+                        </a>
+                    </div>
+
+                    {{-- Compensation --}}
+                    <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.employees*', 'admin.salary-structures*', 'admin.employee-payments*', 'admin.department-profit-share*',  'admin.phantom-equity*', 'admin.profit-share*', 'admin.performance-reviews*', 'admin.compensation*', 'admin.bonuses*') ? 'show here' : '' }}">
+                        <span class="menu-link">
+                            <span class="menu-icon">
+                                <i class="ki-duotone ki-dollar fs-2">
+                                    <span class="path1"></span><span class="path2"></span>
+                                </i>
+                            </span>
+                            <span class="menu-title">Compensation</span>
+                            <span class="menu-arrow"></span>
+                        </span>
+                        <div class="menu-sub menu-sub-accordion">
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->routeIs('admin.employees*') ? 'active' : '' }}" href="{{ route('admin.employees') }}">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">Employees</span>
+                                </a>
+                            </div>
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->routeIs('admin.salary-structures*') ? 'active' : '' }}" href="{{ route('admin.salary-structures') }}">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">Salary Structures</span>
+                                </a>
+                            </div>
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->routeIs('admin.employee-payments*') ? 'active' : '' }}" href="{{ route('admin.employee-payments') }}">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">Payments</span>
+                                </a>
+                            </div>
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->routeIs('admin.phantom-equity*') ? 'active' : '' }}" href="{{ route('admin.phantom-equity') }}">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">Phantom Equity</span>
+                                </a>
+                            </div>
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->routeIs('admin.department-profit-share*') ? 'active' : '' }}" href="{{ route('admin.department-profit-share') }}">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">Profit Share Periods</span>
+                                </a>
+                            </div>
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->routeIs('admin.profit-share*') ? 'active' : '' }}" href="{{ route('admin.profit-share') }}">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">Profit Share</span>
+                                </a>
+                            </div>
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->routeIs('admin.performance-reviews*') ? 'active' : '' }}" href="{{ route('admin.performance-reviews') }}">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">Performance Reviews</span>
+                                </a>
+                            </div>
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->routeIs('admin.bonuses*') ? 'active' : '' }}" href="{{ route('admin.bonuses') }}">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">Bonuses</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    {{-- Expenses --}}
+                    <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.expenses*', 'admin.expense-categories*') ? 'show here' : '' }}">
+                        <span class="menu-link">
+                            <span class="menu-icon">
+                                <i class="ki-duotone ki-abstract-26 fs-2">
+                                    <span class="path1"></span><span class="path2"></span>
+                                </i>
+                            </span>
+                            <span class="menu-title">Expenses</span>
+                            <span class="menu-arrow"></span>
+                        </span>
+                        <div class="menu-sub menu-sub-accordion">
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->routeIs('admin.expenses*') ? 'active' : '' }}" href="{{ route('admin.expenses') }}">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">All Expenses</span>
+                                </a>
+                            </div>
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->routeIs('admin.expense-categories*') ? 'active' : '' }}" href="{{ route('admin.expense-categories') }}">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">Categories</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    
+                    {{-- Divider 
+                    <div class="menu-item pt-5">
+                        <div class="menu-content">
+                            <span class="menu-heading fw-bold text-uppercase fs-7">Income</span>
+                        </div>
+                    </div> --}}
+
+                    {{-- Revenue --}}
+                    <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.deposits*','admin.financial-report') ? 'show here' : '' }}">
+                        <span class="menu-link">
+                            <span class="menu-icon">
+                                <i class="ki-duotone ki-abstract-28 fs-2">
+                                    <span class="path1"></span><span class="path2"></span>
+                                </i>
+                            </span>
+                            <span class="menu-title">Revenue</span>
+                            <span class="menu-arrow"></span>
+                        </span>
+                        <div class="menu-sub menu-sub-accordion">
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->routeIs('admin.deposits*') ? 'active' : '' }}" href="{{ route('admin.deposits') }}">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">Deposits</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Divider --}}
+                    <div class="menu-item pt-5">
+                        <div class="menu-content">
+                            <span class="menu-heading fw-bold text-uppercase fs-7">Reports</span>
+                        </div>
+                    </div>
+
+                    {{-- Reports --}}
+                    <div data-kt-menu-trigger="click" class="menu-item menu-accordion 
+                        {{ request()->routeIs(
+                            'accounting.*',
+                            'admin.expense-reports*'
+                        ) ? 'show here' : '' }}">
+                        <span class="menu-link">
+                            <span class="menu-icon">
+                                <i class="ki-duotone ki-abstract-28 fs-2">
+                                    <span class="path1"></span><span class="path2"></span>
+                                </i>
+                            </span>
+                            <span class="menu-title">Reports</span>
+                            <span class="menu-arrow"></span>
+                        </span>
+                        <div class="menu-sub menu-sub-accordion">
+                            
+                            {{-- Financial Reports Submenu --}}
+                            <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('accounting.payment-methods*', 'accounting.account-balances*', 
+                                'accounting.account-balances*', 'accounting.transaction-ledger*', 'accounting.income-statement*', 'accounting.cash-flow*',
+                                'accounting.transaction-ledger*','accounting.flexible-report*') ? 'show here' : '' }}">
+                                <span class="menu-link">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">Financial Reports</span>
+                                    <span class="menu-arrow"></span>
+                                </span>
+                                <div class="menu-sub menu-sub-accordion">
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('accounting.payment-methods*') ? 'active' : '' }}" href="{{ route('accounting.payment-methods.index') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Payment Methods</span>
+                                        </a>
+                                    </div>
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('accounting.account-balances*') ? 'active' : '' }}" href="{{ route('accounting.account-balances') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Account Balances</span>
+                                        </a>
+                                    </div>
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('accounting.transaction-ledger*') ? 'active' : '' }}" href="{{ route('accounting.transaction-ledger') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Transaction Ledger</span>
+                                        </a>
+                                    </div>
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('accounting.income-statement*') ? 'active' : '' }}" href="{{ route('accounting.income-statement') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Income Statement</span>
+                                        </a>
+                                    </div>
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('accounting.cash-flow*') ? 'active' : '' }}" href="{{ route('accounting.cash-flow') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Cash Flow</span>
+                                        </a>
+                                    </div>
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('accounting.flexible-report*') ? 'active' : '' }}" href="{{ route('accounting.flexible-report') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">General Report</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Expense Reports Submenu --}}
+                            <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.expense-reports*') ? 'show here' : '' }}">
+                                <span class="menu-link">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">Expense Reports</span>
+                                    <span class="menu-arrow"></span>
+                                </span>
+                                <div class="menu-sub menu-sub-accordion">
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.expense-reports') ? 'active' : '' }}" href="{{ route('admin.expense-reports') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Dashboard</span>
+                                        </a>
+                                    </div>
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.expense-reports.summary') ? 'active' : '' }}" href="{{ route('admin.expense-reports.summary') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Summary</span>
+                                        </a>
+                                    </div>
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.expense-reports.category') ? 'active' : '' }}" href="{{ route('admin.expense-reports.category') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">By Category</span>
+                                        </a>
+                                    </div>
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.expense-reports.vendor') ? 'active' : '' }}" href="{{ route('admin.expense-reports.vendor') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">By Vendor</span>
+                                        </a>
+                                    </div>
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.expense-reports.employee') ? 'active' : '' }}" href="{{ route('admin.expense-reports.employee') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">By Employee</span>
+                                        </a>
+                                    </div>
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.expense-reports.payment-method') ? 'active' : '' }}" href="{{ route('admin.expense-reports.payment-method') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">By Payment Method</span>
+                                        </a>
+                                    </div>
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.expense-reports.trends') ? 'active' : '' }}" href="{{ route('admin.expense-reports.trends') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Trends</span>
+                                        </a>
+                                    </div>
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.expense-reports.recurring') ? 'active' : '' }}" href="{{ route('admin.expense-reports.recurring') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Recurring</span>
+                                        </a>
+                                    </div>
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.expense-reports.tax') ? 'active' : '' }}" href="{{ route('admin.expense-reports.tax') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Tax Report</span>
+                                        </a>
+                                    </div>
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.expense-reports.budget') ? 'active' : '' }}" href="{{ route('admin.expense-reports.budget') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Budget vs Actual</span>
+                                        </a>
+                                    </div>
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.expense-reports.audit') ? 'active' : '' }}" href="{{ route('admin.expense-reports.audit') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Audit</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                        </div>
+                    </div>
+
+                    {{-- Divider --}}
+                    <div class="menu-item pt-5">
+                        <div class="menu-content">
+                            <span class="menu-heading fw-bold text-uppercase fs-7">Management</span>
+                        </div>
+                    </div>
+
+                    {{-- User Management --}}
+                    <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('users.*', 'admin.roles', 'admin.roles.*', 'admin.permissions', 'admin.permissions.*') ? 'show here' : '' }}">
+                        <span class="menu-link">
+                            <span class="menu-icon">
+                                <i class="ki-duotone ki-abstract-28 fs-2">
+                                    <span class="path1"></span><span class="path2"></span>
+                                </i>
+                            </span>
+                            <span class="menu-title">User Management</span>
+                            <span class="menu-arrow"></span>
+                        </span>
+                        <div class="menu-sub menu-sub-accordion">
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->routeIs('users.index') ? 'active' : '' }}" href="{{ route('users.index') }}">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">Users List</span>
+                                </a>
+                            </div>
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->routeIs('admin.roles', 'admin.roles.*') ? 'active' : '' }}" href="{{ route('admin.roles') }}">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">Roles</span>
+                                </a>
+                            </div>
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->routeIs('admin.permissions', 'admin.permissions.*') ? 'active' : '' }}" href="{{ route('admin.permissions') }}">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">Permissions</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Settings --}}
+                    <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.currencies*', 'admin.payment-methods*', 'admin.payment-sources*', 'admin.payment-purposes*', 'admin.departments*') ? 'show here' : '' }}">
+                        <span class="menu-link">
+                            <span class="menu-icon">
+                                <i class="ki-duotone ki-setting-2 fs-2">
+                                    <span class="path1"></span><span class="path2"></span>
+                                </i>
+                            </span>
+                            <span class="menu-title">Settings</span>
+                            <span class="menu-arrow"></span>
+                        </span>
+                        <div class="menu-sub menu-sub-accordion">
+                            
+                            {{-- Financial Settings Submenu --}}
+                            <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.currencies*','admin.payment-methods',
+                                'admin.payment-methods*', 'admin.payment-sources*','admin.payment-purposes*') ? 'show here' : '' }}">
+                                <span class="menu-link">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">Financial Settings</span>
+                                    <span class="menu-arrow"></span>
+                                </span>
+                                <div class="menu-sub menu-sub-accordion">
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.currencies*') ? 'active' : '' }}" href="{{ route('admin.currencies') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Currencies</span>
+                                        </a>
+                                    </div>
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.payment-methods*') ? 'active' : '' }}" href="{{ route('admin.payment-methods') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Payment Methods</span>
+                                        </a>
+                                    </div>
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.payment-sources*') ? 'active' : '' }}" href="{{ route('admin.payment-sources') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Payment Sources</span>
+                                        </a>
+                                    </div>
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.payment-purposes*') ? 'active' : '' }}" href="{{ route('admin.payment-purposes') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Payment Purposes</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {{-- Organization Settings --}}
+                            <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.currencies*','admin.departments*') ? 'show here' : '' }}">
+                                <span class="menu-link">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">Organization</span>
+                                    <span class="menu-arrow"></span>
+                                </span>
+                                <div class="menu-sub menu-sub-accordion">
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.departments*') ? 'active' : '' }}" href="{{ route('admin.departments') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Departments</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Sidebar footer --}}
+    <div class="app-sidebar-footer flex-column-auto pt-2 pb-6 px-6" id="kt_app_sidebar_footer">
+        <form method="POST" action="{{ route('logout') }}">
+            @csrf
+            <button type="submit" class="btn btn-flex flex-center btn-custom btn-primary overflow-hidden text-nowrap px-0 h-40px w-100">
+                <span class="btn-label">Sign Out</span>
+                <i class="ki-duotone ki-entrance-right btn-icon fs-2 m-0">
+                    <span class="path1"></span><span class="path2"></span>
+                </i>
+            </button>
+        </form>
+    </div>
+
+</div>
