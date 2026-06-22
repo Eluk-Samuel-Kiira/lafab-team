@@ -18,6 +18,7 @@
 @endsection
 
 @section('content')
+@can('view flexible reports')
 <div class="card card-flush">
     <div class="card-header mt-6">
         <div class="card-title">
@@ -510,6 +511,7 @@
 
     </div>
 </div>
+@endcan
 @endsection
 
 @push('scripts')

@@ -276,7 +276,7 @@
                                     <div class="menu-item">
                                         <a class="menu-link {{ request()->routeIs('accounting.flexible-report*') ? 'active' : '' }}" href="{{ route('accounting.flexible-report') }}">
                                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                            <span class="menu-title">General Report</span>
+                                            <span class="menu-title">Flexible Report</span>
                                         </a>
                                     </div>
                                     @endcan
@@ -398,6 +398,7 @@
                     </div>
                     @endcanany
 
+                    
                     {{-- User Management --}}
                     @canany(['view users', 'view roles', 'view permissions'])
                     <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('users.*', 'admin.roles', 'admin.roles.*', 'admin.permissions', 'admin.permissions.*') ? 'show here' : '' }}">
@@ -500,13 +501,13 @@
                             @endcanany
                             
                             {{-- Organization Settings --}}
-                            @can('view departments')
                             <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.departments*') ? 'show here' : '' }}">
                                 <span class="menu-link">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                     <span class="menu-title">Organization</span>
                                     <span class="menu-arrow"></span>
                                 </span>
+                                @can('view departments')
                                 <div class="menu-sub menu-sub-accordion">
                                     <div class="menu-item">
                                         <a class="menu-link {{ request()->routeIs('admin.departments*') ? 'active' : '' }}" href="{{ route('admin.departments') }}">
@@ -515,8 +516,8 @@
                                         </a>
                                     </div>
                                 </div>
+                                @endcan
                             </div>
-                            @endcan
                             
                         </div>
                     </div>

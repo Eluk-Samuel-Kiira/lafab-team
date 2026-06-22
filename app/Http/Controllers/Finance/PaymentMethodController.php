@@ -100,6 +100,13 @@ class PaymentMethodController extends Controller
      */
     public function storePaymentMethod(Request $request)
     {
+        if (!auth()->user()->can('create payment methods')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to create payment methods.'
+            ]);
+        }
+
         $request->validate([
             'name' => 'required|string|max:255',
             'type' => 'required|in:cash,bank,card,mobile_money,e_wallet,crypto,cheque',
@@ -213,6 +220,13 @@ class PaymentMethodController extends Controller
      */
     public function updatePaymentMethod(Request $request, $id)
     {
+        if (!auth()->user()->can('edit payment methods')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit payment methods.'
+            ]);
+        }
+
         $request->validate([
             'name' => 'required|string|max:255',
             'type' => 'required|in:cash,bank,card,mobile_money,e_wallet,crypto,cheque',
@@ -299,6 +313,14 @@ class PaymentMethodController extends Controller
      */
     public function deletePaymentMethod($id)
     {
+        
+        if (!auth()->user()->can('delete payment methods')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to delete payment methods.'
+            ]);
+        }
+
         try {
             $paymentMethod = PaymentMethod::findOrFail($id);
             
@@ -329,6 +351,14 @@ class PaymentMethodController extends Controller
      */
     public function togglePaymentMethodStatus($id)
     {
+        
+        if (!auth()->user()->can('edit payment methods')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit payment methods.'
+            ]);
+        }
+
         try {
             $paymentMethod = PaymentMethod::findOrFail($id);
             

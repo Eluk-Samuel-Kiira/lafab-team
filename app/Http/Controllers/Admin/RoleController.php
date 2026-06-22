@@ -65,6 +65,12 @@ class RoleController extends Controller
      */
     public function storeRole(Request $request)
     {
+        if (!auth()->user()->can('create roles')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to create roles.'
+            ]);
+        }
         $request->validate([
             'role_name' => 'required|string|unique:roles,name'
         ]);
@@ -145,6 +151,13 @@ class RoleController extends Controller
      */
     public function updateRole(Request $request, $id)
     {
+        if (!auth()->user()->can('edit roles')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit roles.'
+            ], 403);
+        }
+
         try {
             $role = Role::findOrFail($id);
             
@@ -163,11 +176,19 @@ class RoleController extends Controller
             $role->name = $request->role_name;
             $role->save();
             
-            // Sync permissions
-            if ($request->has('permissions')) {
-                $permissionIds = json_decode($request->permissions, true) ?? $request->permissions;
-                if (is_array($permissionIds)) {
+            // Sync permissions - handle both array and JSON string
+            $permissions = $request->input('permissions');
+            if (is_string($permissions)) {
+                $permissions = json_decode($permissions, true);
+            }
+            
+            if (is_array($permissions)) {
+                // Filter out null values and ensure they are integers
+                $permissionIds = array_filter(array_map('intval', $permissions));
+                if (!empty($permissionIds)) {
                     $role->syncPermissions($permissionIds);
+                } else {
+                    $role->syncPermissions([]);
                 }
             }
             
@@ -186,6 +207,12 @@ class RoleController extends Controller
                     'is_protected' => false,
                 ]
             ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'errors' => $e->errors(),
+                'message' => 'Validation failed'
+            ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -194,11 +221,21 @@ class RoleController extends Controller
         }
     }
 
+    
     /**
      * Delete a role.
      */
     public function deleteRole($id)
     {
+        
+        
+        if (!auth()->user()->can('delete roles')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to delete roles.'
+            ]);
+        }
+
         try {
             $role = Role::findOrFail($id);
             

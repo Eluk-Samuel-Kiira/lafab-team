@@ -39,6 +39,7 @@ class PermissionsSeeder extends Seeder
             'delete roles',
             'view permissions',
             'assign permissions',
+            'revoke permissions',
 
             // ============================================================
             // JOB MANAGEMENT
@@ -133,6 +134,22 @@ class PermissionsSeeder extends Seeder
             'categorize expenses',
 
             // ============================================================
+            // REPORTS: EXPENSES
+            // ============================================================
+            'view expense reports',
+            'view expense report dashboard',
+            'view expense by category',
+            'view expense by vendor',
+            'view expense by employee',
+            'view expense by payment method',
+            'view recurring expenses',
+            'view tax reports',
+            'view budget vs actual',
+            'view audit trail',
+            'view expense summary',
+            'export financial reports',
+
+            // ============================================================
             // FINANCE: DEPOSITS
             // ============================================================
             'view deposits',
@@ -157,7 +174,10 @@ class PermissionsSeeder extends Seeder
             // FINANCE: FINANCIAL REPORTS
             // ============================================================
             'view financial reports',
-            'export financial reports',
+            'view account balances',
+            'view transaction ledger',
+            'view income statement',
+            'view flexible reports',
             'view balance sheet',
             'view profit & loss',
             'view cash flow',
@@ -267,6 +287,7 @@ class PermissionsSeeder extends Seeder
             'activate payment methods',
             'deactivate payment methods',
             'assign payment methods',
+            'transfer payment methods',
 
             // ============================================================
             // FINANCE: PAYMENT SOURCE

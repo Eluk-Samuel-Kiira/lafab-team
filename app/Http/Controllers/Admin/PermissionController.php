@@ -72,6 +72,14 @@ class PermissionController extends Controller
      */
     public function storePermission(Request $request)
     {
+        
+        if (!auth()->user()->can('create permissions')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to create permissions.'
+            ], 403);
+        }
+
         $request->validate([
             'permission_name' => 'required|string|unique:permissions,name'
         ]);
@@ -105,6 +113,14 @@ class PermissionController extends Controller
      */
     public function updatePermission(Request $request, $id)
     {
+         
+        if (!auth()->user()->can('edit permissions')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit permissions.'
+            ], 403);
+        }
+
         $request->validate([
             'permission_name' => 'required|string|unique:permissions,name,' . $id
         ]);
@@ -137,6 +153,14 @@ class PermissionController extends Controller
      */
     public function deletePermission($id)
     {
+        
+        if (!auth()->user()->can('delete permissions')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to delete permissions.'
+            ], 403);
+        }
+
         try {
             $permission = Permission::findOrFail($id);
             

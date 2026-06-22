@@ -18,6 +18,7 @@
 @endsection
 
 @section('content')
+@can('view permissions')
     <!--begin::Card-->
     <div class="card card-flush">
         <!--begin::Card header-->
@@ -35,10 +36,9 @@
                 </div>
                 <!--end::Search-->
             </div>
-            <!--end::Card title-->
-            <!--begin::Card toolbar-->
+            
+            @can('create permissions')
             <div class="card-toolbar">
-                <!--begin::Button-->
                 <button type="button" class="btn btn-light-primary" data-bs-toggle="modal" data-bs-target="#kt_modal_add_permission">
                     <i class="ki-duotone ki-plus-square fs-3">
                         <span class="path1"></span>
@@ -46,9 +46,8 @@
                         <span class="path3"></span>
                     </i>Add Permission
                 </button>
-                <!--end::Button-->
             </div>
-            <!--end::Card toolbar-->
+            @endcan
         </div>
         <!--end::Card header-->
         
@@ -201,6 +200,7 @@
         </div>
     </div>
     <!--end::Modal-->
+@endcan
 @endsection
 
 @push('scripts')

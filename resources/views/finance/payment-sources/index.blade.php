@@ -18,6 +18,7 @@
 @endsection
 
 @section('content')
+@can('view payment sources')
 <div class="card card-flush">
     <div class="card-header mt-6">
         <div class="card-title">
@@ -29,11 +30,13 @@
             </div>
         </div>
         <div class="card-toolbar">
+            @can('create payment sources')
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#kt_modal_add_source">
                 <i class="ki-duotone ki-plus-square fs-2">
                     <span class="path1"></span><span class="path2"></span><span class="path3"></span>
                 </i> Add Source
             </button>
+            @endcan
         </div>
     </div>
     
@@ -268,6 +271,7 @@
         </div>
     </div>
 </div>
+@endcan
 @endsection
 
 @push('scripts')

@@ -18,6 +18,7 @@
 @endsection
 
 @section('content')
+@can('view transaction ledger')
 <div class="card card-flush">
     <div class="card-header mt-6">
         <div class="card-title">
@@ -386,6 +387,7 @@
         }
     }
 </style>
+@endcan
 @endsection
 
 @push('scripts')
