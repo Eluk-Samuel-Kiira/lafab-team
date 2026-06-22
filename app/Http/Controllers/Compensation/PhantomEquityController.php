@@ -156,6 +156,14 @@ class PhantomEquityController extends Controller
      */
     public function store(Request $request)
     {
+        
+        if (!auth()->user()->can('create phantom equity')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to create phantom equity.'
+            ]);
+        }
+
         $request->validate([
             'user_id' => 'required|exists:users,id',
             'employee_salary_id' => 'nullable|exists:employee_salaries,id',
@@ -311,6 +319,13 @@ class PhantomEquityController extends Controller
      */
     public function update(Request $request, $id)
     {
+        if (!auth()->user()->can('edit phantom equity')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit phantom equity.'
+            ]);
+        }
+
         $request->validate([
             'transaction_type' => 'required|in:allocation,award,vesting,forfeiture,payout',
             'units' => 'required|integer|min:1',
@@ -367,6 +382,14 @@ class PhantomEquityController extends Controller
      */
     public function destroy($id)
     {
+        
+        if (!auth()->user()->can('delete phantom equity')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit phantom equity.'
+            ]);
+        }
+
         try {
             $transaction = PhantomEquityTransaction::findOrFail($id);
             $transaction->delete();

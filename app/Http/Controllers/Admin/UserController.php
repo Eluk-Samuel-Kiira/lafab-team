@@ -145,6 +145,13 @@ class UserController extends Controller
      */
     public function assignPermission(Request $request, $id)
     {
+        if (!auth()->user()->can('assign permissions')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to assign permissions.'
+            ]);
+        }
+
         $request->validate([
             'permission' => 'required|string|exists:permissions,name'
         ]);
@@ -179,6 +186,14 @@ class UserController extends Controller
      */
     public function revokePermission(Request $request, $id)
     {
+        
+        if (!auth()->user()->can('revoke permissions')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to revoke permissions.'
+            ]);
+        }
+
         $request->validate([
             'permission' => 'required|string|exists:permissions,name'
         ]);
@@ -213,6 +228,14 @@ class UserController extends Controller
      */
     public function storeUser(Request $request)
     {
+          
+        if (!auth()->user()->can('create users')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to create users.'
+            ]);
+        }
+
         $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
@@ -294,6 +317,14 @@ class UserController extends Controller
      */
     public function updateUser(Request $request, $id)
     {
+           
+        if (!auth()->user()->can('edit users')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit users.'
+            ]);
+        }
+
         $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
@@ -346,6 +377,13 @@ class UserController extends Controller
      */
     public function toggleUserStatus($id)
     {
+        if (!auth()->user()->can('edit users')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit users.'
+            ]);
+        }
+
         try {
             $user = User::findOrFail($id);
             
@@ -379,6 +417,13 @@ class UserController extends Controller
      */
     public function deleteUser($id)
     {
+        if (!auth()->user()->can('delete users')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to delete users.'
+            ]);
+        }
+
         try {
             $user = User::findOrFail($id);
             

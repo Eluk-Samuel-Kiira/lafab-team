@@ -18,6 +18,7 @@ class DepartmentController extends Controller
         return view('admin.departments.index');
     }
 
+
     /**
      * Get departments data for DataTable.
      */
@@ -32,8 +33,8 @@ class DepartmentController extends Controller
         if (!empty($search)) {
             $query->where(function($q) use ($search) {
                 $q->where('name', 'like', '%' . $search . '%')
-                  ->orWhere('code', 'like', '%' . $search . '%')
-                  ->orWhere('email', 'like', '%' . $search . '%');
+                ->orWhere('code', 'like', '%' . $search . '%')
+                ->orWhere('email', 'like', '%' . $search . '%');
             });
         }
 
@@ -43,7 +44,32 @@ class DepartmentController extends Controller
 
         $data = [
             'current_page' => $departments->currentPage(),
-            'data' => $departments->items(),
+            'data' => collect($departments->items())->map(function($department) {
+                // Count users in this department
+                $userCount = User::where('department_id', $department->id)->count();
+                
+                return [
+                    'id' => $department->id,
+                    'name' => $department->name,
+                    'code' => $department->code,
+                    'description' => $department->description,
+                    'icon' => $department->icon,
+                    'color' => $department->color,
+                    'email' => $department->email,
+                    'phone' => $department->phone,
+                    'sort_order' => $department->sort_order,
+                    'is_active' => $department->is_active,
+                    'head_of_department_id' => $department->head_of_department_id,
+                    'head_of_department' => $department->headOfDepartment ? [
+                        'id' => $department->headOfDepartment->id,
+                        'name' => $department->headOfDepartment->name,
+                        'email' => $department->headOfDepartment->email,
+                    ] : null,
+                    'user_count' => $userCount,
+                    'created_at' => $department->created_at,
+                    'updated_at' => $department->updated_at,
+                ];
+            })->toArray(),
             'first_page_url' => $departments->url(1),
             'from' => $departments->firstItem(),
             'last_page' => $departments->lastPage(),
@@ -81,6 +107,13 @@ class DepartmentController extends Controller
      */
     public function store(Request $request)
     {
+        if (!auth()->user()->can('create departments')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to create departments.'
+            ]);
+        }
+
         $request->validate([
             'name' => 'required|string|max:255|unique:departments',
             'code' => 'required|string|max:20|unique:departments',
@@ -122,6 +155,13 @@ class DepartmentController extends Controller
      */
     public function update(Request $request, $id)
     {
+        if (!auth()->user()->can('edit departments')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit departments.'
+            ]);
+        }
+
         $department = Department::findOrFail($id);
 
         $request->validate([
@@ -156,6 +196,13 @@ class DepartmentController extends Controller
      */
     public function destroy($id)
     {
+        if (!auth()->user()->can('delete departments')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to delete departments.'
+            ]);
+        }
+
         $department = Department::findOrFail($id);
         
         // Check if department has users
@@ -179,6 +226,14 @@ class DepartmentController extends Controller
      */
     public function toggleStatus($id)
     {
+        
+        if (!auth()->user()->can('edit departments')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit departments.'
+            ]);
+        }
+
         $department = Department::findOrFail($id);
         $department->is_active = !$department->is_active;
         $department->save();

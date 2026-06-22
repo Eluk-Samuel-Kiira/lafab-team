@@ -73,6 +73,14 @@ class ExpenseCategoryController extends Controller
      */
     public function store(Request $request)
     {
+        
+        if (!auth()->user()->can('create expense categories')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to create expense categories.'
+            ]);
+        }
+
         $request->validate([
             'name' => 'required|string|max:255',
             'code' => 'nullable|string|max:20|unique:expense_categories',
@@ -128,6 +136,14 @@ class ExpenseCategoryController extends Controller
      */
     public function update(Request $request, $id)
     {
+           
+        if (!auth()->user()->can('edit expense categories')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit expense categories.'
+            ]);
+        }
+
         $request->validate([
             'name' => 'required|string|max:255',
             'code' => 'required|string|max:20|unique:expense_categories,code,' . $id,
@@ -167,6 +183,13 @@ class ExpenseCategoryController extends Controller
      */
     public function destroy($id)
     {
+        if (!auth()->user()->can('delete expense categories')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to delete expense categories.'
+            ]);
+        }
+
         try {
             $category = ExpenseCategory::findOrFail($id);
             
@@ -200,6 +223,14 @@ class ExpenseCategoryController extends Controller
      */
     public function toggleStatus($id)
     {
+         
+        if (!auth()->user()->can('edit expense categories')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit expense categories.'
+            ]);
+        }
+
         try {
             $category = ExpenseCategory::findOrFail($id);
             $category->is_active = !$category->is_active;

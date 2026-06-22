@@ -18,6 +18,7 @@
 @endsection
 
 @section('content')
+@can('view roles')
     <!--begin::Toolbar-->
     <div class="d-flex justify-content-between align-items-center mb-5">
         <!--begin::Search-->
@@ -31,11 +32,13 @@
         </div>
         <!--end::Search-->
         
+        @can('create roles')
         <!--begin::Add button-->
         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#kt_modal_add_role">
             <i class="ki-duotone ki-plus-square fs-2"></i> Add Role
         </button>
         <!--end::Add button-->
+        @endcan
     </div>
     <!--end::Toolbar-->
     
@@ -183,6 +186,7 @@
         </div>
     </div>
     <!--end::Modal-->
+@endcan
 @endsection
 
 @push('scripts')
@@ -514,7 +518,7 @@
         });
     });
     
-    // Update role form submission
+    // Update role form submission - FIXED
     document.getElementById('updateRoleForm')?.addEventListener('submit', function(e) {
         e.preventDefault();
         
@@ -522,25 +526,36 @@
         showButtonSpinner(submitBtn);
         
         const roleId = document.getElementById('update_role_id').value;
+        const roleName = document.getElementById('update_role_name').value;
         const permissions = [];
         document.querySelectorAll('#permissionsTableEdit .permission-checkbox:checked').forEach(cb => {
             permissions.push(cb.value);
         });
         
-        const formData = new FormData(this);
-        formData.append('permissions', JSON.stringify(permissions));
-        formData.append('_token', '{{ csrf_token() }}');
-        formData.append('_method', 'PUT');
+        // Build data object
+        const data = {
+            role_name: roleName,
+            permissions: permissions,
+            _token: '{{ csrf_token() }}'
+        };
         
         fetch(`/admin/roles/${roleId}`, {
-            method: 'POST',
+            method: 'PUT', // Use PUT directly
             headers: {
                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
             },
-            body: formData
+            body: JSON.stringify(data)
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw data;
+                });
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 window.showToast('success', data.message);
@@ -548,17 +563,24 @@
                 modal.hide();
                 loadRoles();
             } else {
-                window.showToast('error', data.message);
+                window.showToast('error', data.message || 'Failed to update role');
             }
         })
         .catch(error => {
-            window.showToast('error', 'Failed to update role: ' + error.message);
+            console.error('Error:', error);
+            let errorMessage = 'Failed to update role';
+            if (error.errors) {
+                errorMessage = Object.values(error.errors).flat().join('\n');
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            window.showToast('error', errorMessage);
         })
         .finally(() => {
             hideButtonSpinner(submitBtn);
         });
     });
-    
+        
     // Escape HTML
     function escapeHtml(text) {
         if (!text) return '';

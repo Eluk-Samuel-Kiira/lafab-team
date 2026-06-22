@@ -18,6 +18,7 @@
 @endsection
 
 @section('content')
+@can('view expense report dashboard')
 <!-- Quick Navigation -->
 <div class="row g-5 g-xl-10 mb-5">
     <div class="col-12">
@@ -358,4 +359,5 @@
         </div>
     </div>
 </div>
+@endcan
 @endsection

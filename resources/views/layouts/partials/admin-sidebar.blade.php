@@ -43,6 +43,7 @@
                     data-kt-menu-expand="false">
 
                     {{-- Dashboard --}}
+                    @can('view dashboard')
                     <div class="menu-item">
                         <a class="menu-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}">
                             <span class="menu-icon">
@@ -54,8 +55,10 @@
                             <span class="menu-title">Dashboard</span>
                         </a>
                     </div>
+                    @endcan
 
                     {{-- Compensation --}}
+                    @canany(['view employees', 'view salary structure', 'view salary payments', 'view phantom equity', 'view profit share periods', 'view profit share', 'view performance reviews', 'view bonuses'])
                     <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.employees*', 'admin.salary-structures*', 'admin.employee-payments*', 'admin.department-profit-share*',  'admin.phantom-equity*', 'admin.profit-share*', 'admin.performance-reviews*', 'admin.compensation*', 'admin.bonuses*') ? 'show here' : '' }}">
                         <span class="menu-link">
                             <span class="menu-icon">
@@ -67,59 +70,76 @@
                             <span class="menu-arrow"></span>
                         </span>
                         <div class="menu-sub menu-sub-accordion">
+                            @can('view employees')
                             <div class="menu-item">
                                 <a class="menu-link {{ request()->routeIs('admin.employees*') ? 'active' : '' }}" href="{{ route('admin.employees') }}">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                     <span class="menu-title">Employees</span>
                                 </a>
                             </div>
+                            @endcan
+                            @can('view salary structure')
                             <div class="menu-item">
                                 <a class="menu-link {{ request()->routeIs('admin.salary-structures*') ? 'active' : '' }}" href="{{ route('admin.salary-structures') }}">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                     <span class="menu-title">Salary Structures</span>
                                 </a>
                             </div>
+                            @endcan
+                            @can('view salary payments')
                             <div class="menu-item">
                                 <a class="menu-link {{ request()->routeIs('admin.employee-payments*') ? 'active' : '' }}" href="{{ route('admin.employee-payments') }}">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                     <span class="menu-title">Payments</span>
                                 </a>
                             </div>
+                            @endcan
+                            @can('view phantom equity')
                             <div class="menu-item">
                                 <a class="menu-link {{ request()->routeIs('admin.phantom-equity*') ? 'active' : '' }}" href="{{ route('admin.phantom-equity') }}">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                     <span class="menu-title">Phantom Equity</span>
                                 </a>
                             </div>
+                            @endcan
+                            @can('view profit share periods')
                             <div class="menu-item">
                                 <a class="menu-link {{ request()->routeIs('admin.department-profit-share*') ? 'active' : '' }}" href="{{ route('admin.department-profit-share') }}">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                     <span class="menu-title">Profit Share Periods</span>
                                 </a>
                             </div>
+                            @endcan
+                            @can('view profit share')
                             <div class="menu-item">
                                 <a class="menu-link {{ request()->routeIs('admin.profit-share*') ? 'active' : '' }}" href="{{ route('admin.profit-share') }}">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                     <span class="menu-title">Profit Share</span>
                                 </a>
                             </div>
+                            @endcan
+                            @can('view performance reviews')
                             <div class="menu-item">
                                 <a class="menu-link {{ request()->routeIs('admin.performance-reviews*') ? 'active' : '' }}" href="{{ route('admin.performance-reviews') }}">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                     <span class="menu-title">Performance Reviews</span>
                                 </a>
                             </div>
+                            @endcan
+                            @can('view bonuses')
                             <div class="menu-item">
                                 <a class="menu-link {{ request()->routeIs('admin.bonuses*') ? 'active' : '' }}" href="{{ route('admin.bonuses') }}">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                     <span class="menu-title">Bonuses</span>
                                 </a>
                             </div>
+                            @endcan
                         </div>
                     </div>
-
+                    @endcanany
 
                     {{-- Expenses --}}
+                    @canany(['view expenses', 'view expense categories'])
                     <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.expenses*', 'admin.expense-categories*') ? 'show here' : '' }}">
                         <span class="menu-link">
                             <span class="menu-icon">
@@ -131,30 +151,28 @@
                             <span class="menu-arrow"></span>
                         </span>
                         <div class="menu-sub menu-sub-accordion">
+                            @can('view expenses')
                             <div class="menu-item">
                                 <a class="menu-link {{ request()->routeIs('admin.expenses*') ? 'active' : '' }}" href="{{ route('admin.expenses') }}">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                     <span class="menu-title">All Expenses</span>
                                 </a>
                             </div>
+                            @endcan
+                            @can('view expense categories')
                             <div class="menu-item">
                                 <a class="menu-link {{ request()->routeIs('admin.expense-categories*') ? 'active' : '' }}" href="{{ route('admin.expense-categories') }}">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                     <span class="menu-title">Categories</span>
                                 </a>
                             </div>
+                            @endcan
                         </div>
                     </div>
-
-                    
-                    {{-- Divider 
-                    <div class="menu-item pt-5">
-                        <div class="menu-content">
-                            <span class="menu-heading fw-bold text-uppercase fs-7">Income</span>
-                        </div>
-                    </div> --}}
+                    @endcanany
 
                     {{-- Revenue --}}
+                    @can('view deposits')
                     <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.deposits*','admin.financial-report') ? 'show here' : '' }}">
                         <span class="menu-link">
                             <span class="menu-icon">
@@ -174,15 +192,19 @@
                             </div>
                         </div>
                     </div>
+                    @endcan
 
                     {{-- Divider --}}
+                    @canany(['view financial reports', 'view expense reports'])
                     <div class="menu-item pt-5">
                         <div class="menu-content">
                             <span class="menu-heading fw-bold text-uppercase fs-7">Reports</span>
                         </div>
                     </div>
+                    @endcanany
 
                     {{-- Reports --}}
+                    @canany(['view financial reports', 'view expense reports'])
                     <div data-kt-menu-trigger="click" class="menu-item menu-accordion 
                         {{ request()->routeIs(
                             'accounting.*',
@@ -200,6 +222,7 @@
                         <div class="menu-sub menu-sub-accordion">
                             
                             {{-- Financial Reports Submenu --}}
+                            @can('view financial reports')
                             <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('accounting.payment-methods*', 'accounting.account-balances*', 
                                 'accounting.account-balances*', 'accounting.transaction-ledger*', 'accounting.income-statement*', 'accounting.cash-flow*',
                                 'accounting.transaction-ledger*','accounting.flexible-report*') ? 'show here' : '' }}">
@@ -209,46 +232,60 @@
                                     <span class="menu-arrow"></span>
                                 </span>
                                 <div class="menu-sub menu-sub-accordion">
+                                    @can('view payment methods')
                                     <div class="menu-item">
                                         <a class="menu-link {{ request()->routeIs('accounting.payment-methods*') ? 'active' : '' }}" href="{{ route('accounting.payment-methods.index') }}">
                                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                             <span class="menu-title">Payment Methods</span>
                                         </a>
                                     </div>
+                                    @endcan
+                                    @can('view account balances')
                                     <div class="menu-item">
                                         <a class="menu-link {{ request()->routeIs('accounting.account-balances*') ? 'active' : '' }}" href="{{ route('accounting.account-balances') }}">
                                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                             <span class="menu-title">Account Balances</span>
                                         </a>
                                     </div>
+                                    @endcan
+                                    @can('view transaction ledger')
                                     <div class="menu-item">
                                         <a class="menu-link {{ request()->routeIs('accounting.transaction-ledger*') ? 'active' : '' }}" href="{{ route('accounting.transaction-ledger') }}">
                                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                             <span class="menu-title">Transaction Ledger</span>
                                         </a>
                                     </div>
+                                    @endcan
+                                    @can('view income statement')
                                     <div class="menu-item">
                                         <a class="menu-link {{ request()->routeIs('accounting.income-statement*') ? 'active' : '' }}" href="{{ route('accounting.income-statement') }}">
                                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                             <span class="menu-title">Income Statement</span>
                                         </a>
                                     </div>
+                                    @endcan
+                                    @can('view cash flow')
                                     <div class="menu-item">
                                         <a class="menu-link {{ request()->routeIs('accounting.cash-flow*') ? 'active' : '' }}" href="{{ route('accounting.cash-flow') }}">
                                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                             <span class="menu-title">Cash Flow</span>
                                         </a>
                                     </div>
+                                    @endcan
+                                    @can('view flexible reports')
                                     <div class="menu-item">
                                         <a class="menu-link {{ request()->routeIs('accounting.flexible-report*') ? 'active' : '' }}" href="{{ route('accounting.flexible-report') }}">
                                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                            <span class="menu-title">General Report</span>
+                                            <span class="menu-title">Flexible Report</span>
                                         </a>
                                     </div>
+                                    @endcan
                                 </div>
                             </div>
+                            @endcan
 
                             {{-- Expense Reports Submenu --}}
+                            @can('view expense reports')
                             <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.expense-reports*') ? 'show here' : '' }}">
                                 <span class="menu-link">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
@@ -256,86 +293,114 @@
                                     <span class="menu-arrow"></span>
                                 </span>
                                 <div class="menu-sub menu-sub-accordion">
+                                    @can('view expense report dashboard')
                                     <div class="menu-item">
                                         <a class="menu-link {{ request()->routeIs('admin.expense-reports') ? 'active' : '' }}" href="{{ route('admin.expense-reports') }}">
                                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                             <span class="menu-title">Dashboard</span>
                                         </a>
                                     </div>
+                                    @endcan
+                                    @can('view expense summary')
                                     <div class="menu-item">
                                         <a class="menu-link {{ request()->routeIs('admin.expense-reports.summary') ? 'active' : '' }}" href="{{ route('admin.expense-reports.summary') }}">
                                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                             <span class="menu-title">Summary</span>
                                         </a>
                                     </div>
+                                    @endcan
+                                    @can('view expense by category')
                                     <div class="menu-item">
                                         <a class="menu-link {{ request()->routeIs('admin.expense-reports.category') ? 'active' : '' }}" href="{{ route('admin.expense-reports.category') }}">
                                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                             <span class="menu-title">By Category</span>
                                         </a>
                                     </div>
+                                    @endcan
+                                    @can('view expense by vendor')
                                     <div class="menu-item">
                                         <a class="menu-link {{ request()->routeIs('admin.expense-reports.vendor') ? 'active' : '' }}" href="{{ route('admin.expense-reports.vendor') }}">
                                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                             <span class="menu-title">By Vendor</span>
                                         </a>
                                     </div>
+                                    @endcan
+                                    @can('view expense by employee')
                                     <div class="menu-item">
                                         <a class="menu-link {{ request()->routeIs('admin.expense-reports.employee') ? 'active' : '' }}" href="{{ route('admin.expense-reports.employee') }}">
                                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                             <span class="menu-title">By Employee</span>
                                         </a>
                                     </div>
+                                    @endcan
+                                    @can('view expense by payment method')
                                     <div class="menu-item">
                                         <a class="menu-link {{ request()->routeIs('admin.expense-reports.payment-method') ? 'active' : '' }}" href="{{ route('admin.expense-reports.payment-method') }}">
                                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                             <span class="menu-title">By Payment Method</span>
                                         </a>
                                     </div>
+                                    @endcan
+                                    @can('view expense trends')
                                     <div class="menu-item">
                                         <a class="menu-link {{ request()->routeIs('admin.expense-reports.trends') ? 'active' : '' }}" href="{{ route('admin.expense-reports.trends') }}">
                                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                             <span class="menu-title">Trends</span>
                                         </a>
                                     </div>
+                                    @endcan
+                                    @can('view recurring expenses')
                                     <div class="menu-item">
                                         <a class="menu-link {{ request()->routeIs('admin.expense-reports.recurring') ? 'active' : '' }}" href="{{ route('admin.expense-reports.recurring') }}">
                                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                             <span class="menu-title">Recurring</span>
                                         </a>
                                     </div>
+                                    @endcan
+                                    @can('view tax reports')
                                     <div class="menu-item">
                                         <a class="menu-link {{ request()->routeIs('admin.expense-reports.tax') ? 'active' : '' }}" href="{{ route('admin.expense-reports.tax') }}">
                                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                             <span class="menu-title">Tax Report</span>
                                         </a>
                                     </div>
+                                    @endcan
+                                    @can('view budget vs actual')
                                     <div class="menu-item">
                                         <a class="menu-link {{ request()->routeIs('admin.expense-reports.budget') ? 'active' : '' }}" href="{{ route('admin.expense-reports.budget') }}">
                                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                             <span class="menu-title">Budget vs Actual</span>
                                         </a>
                                     </div>
+                                    @endcan
+                                    @can('view audit trail')
                                     <div class="menu-item">
                                         <a class="menu-link {{ request()->routeIs('admin.expense-reports.audit') ? 'active' : '' }}" href="{{ route('admin.expense-reports.audit') }}">
                                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                             <span class="menu-title">Audit</span>
                                         </a>
                                     </div>
+                                    @endcan
                                 </div>
                             </div>
+                            @endcan
                             
                         </div>
                     </div>
+                    @endcanany
 
                     {{-- Divider --}}
+                    @canany(['view users', 'view roles', 'view permissions'])
                     <div class="menu-item pt-5">
                         <div class="menu-content">
                             <span class="menu-heading fw-bold text-uppercase fs-7">Management</span>
                         </div>
                     </div>
+                    @endcanany
 
+                    
                     {{-- User Management --}}
+                    @canany(['view users', 'view roles', 'view permissions'])
                     <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('users.*', 'admin.roles', 'admin.roles.*', 'admin.permissions', 'admin.permissions.*') ? 'show here' : '' }}">
                         <span class="menu-link">
                             <span class="menu-icon">
@@ -347,28 +412,36 @@
                             <span class="menu-arrow"></span>
                         </span>
                         <div class="menu-sub menu-sub-accordion">
+                            @can('view users')
                             <div class="menu-item">
                                 <a class="menu-link {{ request()->routeIs('users.index') ? 'active' : '' }}" href="{{ route('users.index') }}">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                     <span class="menu-title">Users List</span>
                                 </a>
                             </div>
+                            @endcan
+                            @can('view roles')
                             <div class="menu-item">
                                 <a class="menu-link {{ request()->routeIs('admin.roles', 'admin.roles.*') ? 'active' : '' }}" href="{{ route('admin.roles') }}">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                     <span class="menu-title">Roles</span>
                                 </a>
                             </div>
+                            @endcan
+                            @can('view permissions')
                             <div class="menu-item">
                                 <a class="menu-link {{ request()->routeIs('admin.permissions', 'admin.permissions.*') ? 'active' : '' }}" href="{{ route('admin.permissions') }}">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                     <span class="menu-title">Permissions</span>
                                 </a>
                             </div>
+                            @endcan
                         </div>
                     </div>
+                    @endcanany
 
                     {{-- Settings --}}
+                    @canany(['view currencies', 'view payment methods', 'view payment sources', 'view payment purposes', 'view departments'])
                     <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.currencies*', 'admin.payment-methods*', 'admin.payment-sources*', 'admin.payment-purposes*', 'admin.departments*') ? 'show here' : '' }}">
                         <span class="menu-link">
                             <span class="menu-icon">
@@ -382,6 +455,7 @@
                         <div class="menu-sub menu-sub-accordion">
                             
                             {{-- Financial Settings Submenu --}}
+                            @canany(['view currencies', 'view payment methods', 'view payment sources', 'view payment purposes'])
                             <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.currencies*','admin.payment-methods',
                                 'admin.payment-methods*', 'admin.payment-sources*','admin.payment-purposes*') ? 'show here' : '' }}">
                                 <span class="menu-link">
@@ -390,40 +464,50 @@
                                     <span class="menu-arrow"></span>
                                 </span>
                                 <div class="menu-sub menu-sub-accordion">
+                                    @can('view currencies')
                                     <div class="menu-item">
                                         <a class="menu-link {{ request()->routeIs('admin.currencies*') ? 'active' : '' }}" href="{{ route('admin.currencies') }}">
                                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                             <span class="menu-title">Currencies</span>
                                         </a>
                                     </div>
+                                    @endcan
+                                    @can('view payment methods')
                                     <div class="menu-item">
                                         <a class="menu-link {{ request()->routeIs('admin.payment-methods*') ? 'active' : '' }}" href="{{ route('admin.payment-methods') }}">
                                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                             <span class="menu-title">Payment Methods</span>
                                         </a>
                                     </div>
+                                    @endcan
+                                    @can('view payment sources')
                                     <div class="menu-item">
                                         <a class="menu-link {{ request()->routeIs('admin.payment-sources*') ? 'active' : '' }}" href="{{ route('admin.payment-sources') }}">
                                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                             <span class="menu-title">Payment Sources</span>
                                         </a>
                                     </div>
+                                    @endcan
+                                    @can('view payment purposes')
                                     <div class="menu-item">
                                         <a class="menu-link {{ request()->routeIs('admin.payment-purposes*') ? 'active' : '' }}" href="{{ route('admin.payment-purposes') }}">
                                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                             <span class="menu-title">Payment Purposes</span>
                                         </a>
                                     </div>
+                                    @endcan
                                 </div>
                             </div>
+                            @endcanany
                             
                             {{-- Organization Settings --}}
-                            <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.currencies*','admin.departments*') ? 'show here' : '' }}">
+                            <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.departments*') ? 'show here' : '' }}">
                                 <span class="menu-link">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                     <span class="menu-title">Organization</span>
                                     <span class="menu-arrow"></span>
                                 </span>
+                                @can('view departments')
                                 <div class="menu-sub menu-sub-accordion">
                                     <div class="menu-item">
                                         <a class="menu-link {{ request()->routeIs('admin.departments*') ? 'active' : '' }}" href="{{ route('admin.departments') }}">
@@ -432,10 +516,12 @@
                                         </a>
                                     </div>
                                 </div>
+                                @endcan
                             </div>
                             
                         </div>
                     </div>
+                    @endcanany
 
                 </div>
             </div>

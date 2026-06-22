@@ -150,6 +150,13 @@ class EmployeeController extends Controller
 
     public function store(Request $request)
     {
+        if (!auth()->user()->can('create employees')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to create employees.'
+            ]);
+        }
+
         $isRecurring = $request->has('is_salary_recurring') && 
                     ($request->input('is_salary_recurring') == '1' || 
                         $request->input('is_salary_recurring') == 'on' || 
@@ -240,6 +247,14 @@ class EmployeeController extends Controller
 
     public function update(Request $request, $id)
     {
+        
+        if (!auth()->user()->can('edit employees')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to update employees.'
+            ]);
+        }
+
         $isRecurring = $request->has('is_salary_recurring') && 
                     ($request->input('is_salary_recurring') == '1' || 
                         $request->input('is_salary_recurring') == 'on' || 
@@ -384,6 +399,14 @@ class EmployeeController extends Controller
 
     public function toggleStatus($id)
     {
+        
+        // 1. Check if user has permission to create employees
+        if (!auth()->user()->can('edit employees')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to update employees.'
+            ]);
+        }
         try {
             $employee = Employee::findOrFail($id);
             $employee->is_active = !$employee->is_active;
@@ -411,6 +434,13 @@ class EmployeeController extends Controller
 
     public function destroy($id)
     {
+        
+        if (!auth()->user()->can('delete employees')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to delete employees.'
+            ]);
+        }
         try {
             DB::transaction(function () use ($id) {
                 $employee = Employee::withTrashed()->findOrFail($id);

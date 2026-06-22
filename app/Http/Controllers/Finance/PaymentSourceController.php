@@ -53,6 +53,14 @@ class PaymentSourceController extends Controller
 
     public function store(Request $request)
     {
+        
+        if (!auth()->user()->can('create payment sources')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to create payment sources.'
+            ]);
+        }
+
         $request->validate([
             'name' => 'required|string|max:255',
             'slug' => 'required|string|unique:payment_sources',
@@ -85,6 +93,14 @@ class PaymentSourceController extends Controller
 
     public function update(Request $request, $id)
     {
+        
+        if (!auth()->user()->can('edit payment sources')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit payment sources.'
+            ]);
+        }
+
         $source = PaymentSource::findOrFail($id);
 
         $request->validate([
@@ -113,6 +129,13 @@ class PaymentSourceController extends Controller
 
     public function destroy($id)
     {
+        
+        if (!auth()->user()->can('delete payment sources')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to delete payment sources.'
+            ]);
+        }
         $source = PaymentSource::findOrFail($id);
         
         // Check if source has deposits

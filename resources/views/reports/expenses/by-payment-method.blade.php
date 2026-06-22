@@ -24,6 +24,7 @@
 @endsection
 
 @section('content')
+@can('view expense by payment method')
 <!-- Filters -->
 <div class="card card-flush shadow-sm mb-5">
     <div class="card-body py-4">
@@ -334,4 +335,5 @@
         </div>
     </div>
 </div>
+@endcan
 @endsection

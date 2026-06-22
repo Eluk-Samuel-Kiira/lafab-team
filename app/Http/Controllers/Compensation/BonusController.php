@@ -192,6 +192,14 @@ class BonusController extends Controller
      */
     public function store(Request $request)
     {
+        
+        if (!auth()->user()->can('create bonuses')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to create bonuses.'
+            ]);
+        }
+
         $request->validate([
             'user_id' => 'required|exists:users,id',
             'employee_salary_id' => 'nullable|exists:employee_salaries,id',
@@ -350,6 +358,13 @@ class BonusController extends Controller
      */
     public function update(Request $request, $id)
     {
+        if (!auth()->user()->can('edit bonuses')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit bonuses.'
+            ]);
+        }
+
         $request->validate([
             'bonus_type' => 'required|in:performance,retention,commission,extraordinary,referral,signing,holiday,project,team',
             'bonus_category' => 'required|in:monthly,quarterly,annual,one_time',
@@ -434,6 +449,13 @@ class BonusController extends Controller
      */
     public function approve(Request $request, $id)
     {
+        if (!auth()->user()->can('approve bonuses')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to approve bonuses.'
+            ]);
+        }
+
         try {
             DB::beginTransaction();
 
@@ -470,6 +492,13 @@ class BonusController extends Controller
      */
     public function pay(Request $request, $id)
     {
+        if (!auth()->user()->can('pay bonuses')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to pay bonuses.'
+            ]);
+        }
+
         $request->validate([
             'payment_method_id' => 'required|exists:payment_methods,id',
         ]);
@@ -555,6 +584,12 @@ class BonusController extends Controller
      */
     public function destroy($id)
     {
+        if (!auth()->user()->can('delete bonuses')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to delete bonuses.'
+            ]);
+        }
         try {
             $bonus = Bonus::findOrFail($id);
             

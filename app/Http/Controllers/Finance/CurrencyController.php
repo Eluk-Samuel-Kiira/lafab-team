@@ -74,6 +74,14 @@ class CurrencyController extends Controller
      */
     public function storeCurrency(Request $request)
     {
+        
+        if (!auth()->user()->can('create currencies')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to create currencies.'
+            ]);
+        }
+
         $request->validate([
             'code' => 'required|string|max:3|unique:currencies',
             'name' => 'required|string|max:255',
@@ -133,6 +141,14 @@ class CurrencyController extends Controller
      */
     public function updateCurrency(Request $request, $id)
     {
+        
+        if (!auth()->user()->can('edit currencies')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit currencies.'
+            ]);
+        }
+
         $request->validate([
             'code' => 'required|string|max:3|unique:currencies,code,' . $id,
             'name' => 'required|string|max:255',
@@ -179,6 +195,13 @@ class CurrencyController extends Controller
      */
     public function deleteCurrency($id)
     {
+        if (!auth()->user()->can('delete currencies')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to delete currencies.'
+            ]);
+        }
+
         try {
             $currency = Currency::findOrFail($id);
             
@@ -216,6 +239,13 @@ class CurrencyController extends Controller
      */
     public function toggleCurrencyStatus($id)
     {
+        if (!auth()->user()->can('edit currencies')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit currencies.'
+            ]);
+        }
+        
         try {
             $currency = Currency::findOrFail($id);
             

@@ -18,6 +18,7 @@
 @endsection
 
 @section('content')
+ @can('view profit share periods')
 <div class="card card-flush">
     <div class="card-header mt-6">
         <div class="card-title">
@@ -49,6 +50,7 @@
                 </div>
             </div>
         </div>
+        @can('create profit share periods')
         <div class="card-toolbar">
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#kt_modal_calculate_profit_share">
                 <i class="ki-duotone ki-calculator fs-2">
@@ -56,6 +58,7 @@
                 </i> Calculate Profit Share
             </button>
         </div>
+        @endcan
     </div>
 
     <div class="card-body pt-0">
@@ -361,6 +364,7 @@
         </div>
     </div>
 </div>
+@endcan
 @endsection
 
 @push('scripts')

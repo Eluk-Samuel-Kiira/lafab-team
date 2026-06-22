@@ -18,6 +18,7 @@
 @endsection
 
 @section('content')
+@can('view payment methods')
 <div class="card card-flush">
     <div class="card-header mt-6">
         <div class="card-title">
@@ -31,6 +32,7 @@
         </div>
         <div class="card-toolbar">
             <div class="d-flex gap-3">
+                @can('create payment methods')
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#kt_modal_add_payment_method">
                     <i class="ki-duotone ki-plus-square fs-2">
                         <span class="path1"></span>
@@ -38,12 +40,15 @@
                         <span class="path3"></span>
                     </i> Add Payment Method
                 </button>
+                @endcan
+                @can('transfer payment methods')
                 <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#kt_modal_transfer_payment">
                     <i class="ki-duotone ki-arrows-circle fs-2">
                         <span class="path1"></span>
                         <span class="path2"></span>
                     </i> Transfer
                 </button>
+                @endcan
             </div>
         </div>
     </div>
@@ -548,6 +553,8 @@
         </div>
     </div>
 </div>
+
+@endcan
 @endsection
 
 @push('scripts')

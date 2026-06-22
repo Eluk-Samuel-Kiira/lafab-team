@@ -11,6 +11,7 @@
 @endsection
 
 @section('content')
+@can('view dashboard')
     <div class="row g-5 gx-xl-10 mb-5 mb-xl-10">
         <div class="col-md-12">
             <div class="card card-flush">
@@ -23,4 +24,5 @@
             </div>
         </div>
     </div>
+@endcan
 @endsection

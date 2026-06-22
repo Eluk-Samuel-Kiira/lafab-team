@@ -52,6 +52,14 @@ class PaymentPurposeController extends Controller
 
     public function store(Request $request)
     {
+        
+        if (!auth()->user()->can('create payment purposes')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to create payment purposes.'
+            ]);
+        }
+
         $request->validate([
             'name' => 'required|string|max:255',
             'slug' => 'required|string|unique:payment_purposes',
@@ -84,6 +92,14 @@ class PaymentPurposeController extends Controller
 
     public function update(Request $request, $id)
     {
+          
+        if (!auth()->user()->can('edit payment purposes')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit payment purposes.'
+            ]);
+        }
+
         $purpose = PaymentPurpose::findOrFail($id);
 
         $request->validate([
@@ -112,6 +128,12 @@ class PaymentPurposeController extends Controller
 
     public function destroy($id)
     {
+        if (!auth()->user()->can('delete payment purposes')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to delete payment purposes.'
+            ]);
+        }
         $purpose = PaymentPurpose::findOrFail($id);
         
         // Check if purpose has deposits
