@@ -277,3 +277,4 @@ Route::middleware('auth')->prefix('admin')->group(function () {
 require __DIR__.'/auth.php';
 require __DIR__.'/report.php';
 require __DIR__.'/user.php';
+require __DIR__.'/migration.php';
