@@ -30,6 +30,12 @@ class DatabaseSeeder extends Seeder
             SalaryStructureSeeder::class,   
             EmployeeSalarySeeder::class,
             EmployeeSalarySeeder::class,
+            IndustrySeeder::class,
+            JobLocationSeeder::class,
+            SalaryRangeSeeder::class,
+            ExperienceLevelSeeder::class,
+            EducationLevelSeeder::class,
+            JobTypeSeeder::class,
 
         ]);
     }
