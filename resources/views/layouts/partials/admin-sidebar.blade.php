@@ -523,9 +523,9 @@
                     </div>
                     @endcanany
 
-                    {{-- Migration --}}
+                    {{-- Database Migration --}}
                     @role('super_admin')
-                    <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.migration*', 'admin.job-categories.migration*', 'admin.companies.migration*') ? 'show here' : '' }}">
+                    <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.migration*') ? 'show here' : '' }}">
                         <span class="menu-link">
                             <span class="menu-icon">
                                 <i class="ki-duotone ki-abstract-26 fs-2">
@@ -537,18 +537,11 @@
                         </span>
                         <div class="menu-sub menu-sub-accordion">
                             <div class="menu-item">
-                                <a class="menu-link {{ request()->routeIs('admin.job-categories.migration*') ? 'active' : '' }}" href="{{ route('admin.job-categories.migration') }}">
+                                <a class="menu-link {{ request()->routeIs('admin.migration.dashboard*') ? 'active' : '' }}" href="{{ route('admin.migration.dashboard') }}">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                    <span class="menu-title">Job Categories</span>
+                                    <span class="menu-title">Database Migration</span>
                                 </a>
                             </div>
-                            <div class="menu-item">
-                                <a class="menu-link {{ request()->routeIs('admin.companies.migration*') ? 'active' : '' }}" href="{{ route('admin.companies.migration') }}">
-                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                    <span class="menu-title">Companies</span>
-                                </a>
-                            </div>
-                            <!-- More tables will be added here -->
                         </div>
                     </div>
                     @endrole

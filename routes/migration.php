@@ -2,59 +2,28 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Job\Migration\{ 
-    JobCategoryMigrationController,
-    CompanyMigrationController,
-
-    };
+    DatabaseMigrationController,
+};
 use Illuminate\Support\Facades\Route;
 
 
-// Job Categories Migration Routes
+
+
+// In routes/web.php
 Route::middleware(['auth', 'superadmin'])->prefix('admin')->group(function () {
-    Route::get('/job-categories/migration', [JobCategoryMigrationController::class, 'index'])
-        ->name('admin.job-categories.migration');
-    Route::get('/job-categories/migration/stats', [JobCategoryMigrationController::class, 'getStatistics'])
-        ->name('admin.job-categories.migration.stats');
-    Route::get('/job-categories/migration/data', [JobCategoryMigrationController::class, 'getCategories'])
-        ->name('admin.job-categories.migration.data');
-    Route::get('/job-categories/migration/{id}', [JobCategoryMigrationController::class, 'show'])
-        ->name('admin.job-categories.migration.show');
-    Route::post('/job-categories/migration/import', [JobCategoryMigrationController::class, 'import'])
-        ->name('admin.job-categories.migration.import');
-    Route::post('/job-categories/migration/{id}/migrate', [JobCategoryMigrationController::class, 'migrateSingle'])
-        ->name('admin.job-categories.migration.single');
-    Route::post('/job-categories/migration/bulk', [JobCategoryMigrationController::class, 'bulkMigrate'])
-        ->name('admin.job-categories.migration.bulk');
-    Route::post('/job-categories/migration/{id}/rollback', [JobCategoryMigrationController::class, 'rollback'])
-        ->name('admin.job-categories.migration.rollback');
-    Route::put('/job-categories/migration/{id}', [JobCategoryMigrationController::class, 'update'])
-        ->name('admin.job-categories.migration.update');
-    Route::delete('/job-categories/migration/{id}', [JobCategoryMigrationController::class, 'destroy'])
-        ->name('admin.job-categories.migration.destroy');
-});
-
-
-
-// Companies Migration Routes
-Route::middleware(['auth', 'superadmin'])->prefix('admin')->group(function () {
-    Route::get('/companies/migration', [CompanyMigrationController::class, 'index'])
-        ->name('admin.companies.migration');
-    Route::get('/companies/migration/stats', [CompanyMigrationController::class, 'getStatistics'])
-        ->name('admin.companies.migration.stats');
-    Route::get('/companies/migration/data', [CompanyMigrationController::class, 'getCompanies'])
-        ->name('admin.companies.migration.data');
-    Route::get('/companies/migration/{id}', [CompanyMigrationController::class, 'show'])
-        ->name('admin.companies.migration.show');
-    Route::post('/companies/migration/import', [CompanyMigrationController::class, 'import'])
-        ->name('admin.companies.migration.import');
-    Route::post('/companies/migration/{id}/migrate', [CompanyMigrationController::class, 'migrateSingle'])
-        ->name('admin.companies.migration.single');
-    Route::post('/companies/migration/bulk', [CompanyMigrationController::class, 'bulkMigrate'])
-        ->name('admin.companies.migration.bulk');
-    Route::post('/companies/migration/{id}/rollback', [CompanyMigrationController::class, 'rollback'])
-        ->name('admin.companies.migration.rollback');
-    Route::put('/companies/migration/{id}', [CompanyMigrationController::class, 'update'])
-        ->name('admin.companies.migration.update');
-    Route::delete('/companies/migration/{id}', [CompanyMigrationController::class, 'destroy'])
-        ->name('admin.companies.migration.destroy');
+    // Database Migration
+    Route::get('/migration', [DatabaseMigrationController::class, 'index'])->name('admin.migration.dashboard');
+    Route::get('/migration/tables', [DatabaseMigrationController::class, 'getTables'])->name('admin.migration.tables');
+    Route::get('/migration/stats', [DatabaseMigrationController::class, 'getStats'])->name('admin.migration.stats');
+    Route::get('/migration/all-stats', [DatabaseMigrationController::class, 'getAllStats'])->name('admin.migration.all-stats');
+    Route::get('/migration/progress', [DatabaseMigrationController::class, 'getProgress'])->name('admin.migration.progress');
+    Route::get('/migration/summary', [DatabaseMigrationController::class, 'getSummary'])->name('admin.migration.summary');
+    Route::get('/migration/table-config/{table}', [DatabaseMigrationController::class, 'getTableConfig'])->name('admin.migration.table-config');
+    Route::get('/migration/test-connection', [DatabaseMigrationController::class, 'testConnection'])->name('admin.migration.test-connection');
+    Route::get('/migration/debug-data', [DatabaseMigrationController::class, 'debugData'])->name('admin.migration.debug-data');
+    Route::get('/migration/check-legacy', [DatabaseMigrationController::class, 'checkLegacyConnection'])->name('admin.migration.check-legacy');
+    Route::post('/migration/migrate', [DatabaseMigrationController::class, 'migrate'])->name('admin.migration.migrate');
+    Route::post('/migration/migrate-all', [DatabaseMigrationController::class, 'migrateAll'])->name('admin.migration.migrate-all');
+    Route::post('/migration/reset', [DatabaseMigrationController::class, 'resetMigration'])->name('admin.migration.reset');
+    Route::get('/migration/countries', [DatabaseMigrationController::class, 'getCountries'])->name('admin.migration.countries');
 });
