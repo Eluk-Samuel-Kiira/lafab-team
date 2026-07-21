@@ -2,17 +2,12 @@
 
 namespace App\Models\Job;
 
-use App\Models\Auth\User;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 class ExperienceLevel extends Model
 {
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'name',
         'slug',
@@ -26,11 +21,6 @@ class ExperienceLevel extends Model
         'created_by',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
         'min_years' => 'integer',
         'max_years' => 'integer',
@@ -38,9 +28,6 @@ class ExperienceLevel extends Model
         'sort_order' => 'integer',
     ];
 
-    /**
-     * Bootstrap the model and its traits.
-     */
     protected static function boot()
     {
         parent::boot();
@@ -48,15 +35,42 @@ class ExperienceLevel extends Model
         static::creating(function ($experienceLevel) {
             if (empty($experienceLevel->slug)) {
                 $experienceLevel->slug = Str::slug($experienceLevel->name);
+                // Ensure uniqueness
+                $slug = $experienceLevel->slug;
+                $counter = 1;
+                while (static::where('slug', $slug)->exists()) {
+                    $slug = $experienceLevel->slug . '-' . $counter++;
+                }
+                $experienceLevel->slug = $slug;
             }
+            
             if (empty($experienceLevel->created_by) && auth()->check()) {
                 $experienceLevel->created_by = auth()->id();
+            }
+            
+            // Set meta title if not provided
+            if (empty($experienceLevel->meta_title)) {
+                $experienceLevel->meta_title = "{$experienceLevel->name} Jobs - Experience Level";
+            }
+            
+            // Set meta description if not provided
+            if (empty($experienceLevel->meta_description)) {
+                $yearsRange = $experienceLevel->min_years && $experienceLevel->max_years 
+                    ? "{$experienceLevel->min_years}-{$experienceLevel->max_years} years" 
+                    : ($experienceLevel->min_years ? "{$experienceLevel->min_years}+ years" : "various years");
+                $experienceLevel->meta_description = "Find {$experienceLevel->name} positions requiring {$yearsRange} of experience. Browse career opportunities and job vacancies.";
             }
         });
 
         static::updating(function ($experienceLevel) {
             if ($experienceLevel->isDirty('name') && !$experienceLevel->isDirty('slug')) {
                 $experienceLevel->slug = Str::slug($experienceLevel->name);
+                $slug = $experienceLevel->slug;
+                $counter = 1;
+                while (static::where('slug', $slug)->where('id', '!=', $experienceLevel->id)->exists()) {
+                    $slug = $experienceLevel->slug . '-' . $counter++;
+                }
+                $experienceLevel->slug = $slug;
             }
         });
     }
@@ -129,25 +143,17 @@ class ExperienceLevel extends Model
         return url("/experience/{$this->slug}");
     }
 
-    /**
-     * Scope a query to only include active experience levels.
-     */
+    // Scopes
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
     }
 
-    /**
-     * Scope a query to order by sort_order.
-     */
     public function scopeOrdered($query)
     {
         return $query->orderBy('sort_order')->orderBy('name');
     }
 
-    /**
-     * Scope a query to only include entry level positions.
-     */
     public function scopeEntryLevel($query)
     {
         return $query->where(function($q) {
@@ -156,26 +162,17 @@ class ExperienceLevel extends Model
         });
     }
 
-    /**
-     * Scope a query to only include mid level positions.
-     */
     public function scopeMidLevel($query)
     {
         return $query->where('min_years', '>=', 2)
                      ->where('min_years', '<=', 4);
     }
 
-    /**
-     * Scope a query to only include senior level positions.
-     */
     public function scopeSeniorLevel($query)
     {
         return $query->where('min_years', '>=', 5);
     }
 
-    /**
-     * Scope a query to filter by minimum years.
-     */
     public function scopeMinYears($query, $years)
     {
         return $query->where('min_years', '<=', $years)
@@ -185,17 +182,18 @@ class ExperienceLevel extends Model
                      });
     }
 
-    /**
-     * Scope a query to filter by maximum years.
-     */
     public function scopeMaxYears($query, $years)
     {
         return $query->where('max_years', '<=', $years);
     }
 
-    /**
-     * Get all jobs for this experience level.
-     */
+    public function scopeSearch($query, $search)
+    {
+        return $query->where('name', 'LIKE', "%{$search}%")
+                     ->orWhere('description', 'LIKE', "%{$search}%");
+    }
+
+    // Relationships
     public function jobs()
     {
         return $this->hasMany(JobPost::class, 'experience_level_id');
@@ -206,41 +204,28 @@ class ExperienceLevel extends Model
         return $this->hasMany(JobPost::class, 'experience_level_id');
     }
 
-    /**
-     * Get the creator of this experience level.
-     */
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    /**
-     * Get active jobs count for this experience level.
-     */
+    // Accessors
     public function getActiveJobsCountAttribute(): int
     {
         return $this->jobs()->where('is_active', true)->count();
     }
 
-    /**
-     * Get the minimum years value with a default.
-     */
     public function getMinYearsValueAttribute(): int
     {
         return $this->min_years ?? 0;
     }
 
-    /**
-     * Get the maximum years value with a default.
-     */
     public function getMaxYearsValueAttribute(): int
     {
         return $this->max_years ?? 99;
     }
 
-    /**
-     * Determine if this experience level matches given years.
-     */
+    // Methods
     public function matchesYears(int $years): bool
     {
         $minYears = $this->min_years ?? 0;
@@ -249,9 +234,6 @@ class ExperienceLevel extends Model
         return $years >= $minYears && $years <= $maxYears;
     }
 
-    /**
-     * Get the experience level as an array for API responses.
-     */
     public function toApiArray(): array
     {
         return [

@@ -21,6 +21,8 @@ return new class extends Migration
             $table->string('icon')->nullable();
             $table->boolean('is_active')->default(true);
             $table->integer('sort_order')->default(0);
+            // Foreign keys
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
 
             $table->index(['is_active', 'sort_order']);
