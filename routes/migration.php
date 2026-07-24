@@ -175,3 +175,88 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
     Route::get('/industries/icons', [App\Http\Controllers\Job\Setting\IndustryController::class, 'getIcons'])
         ->name('admin.industries.icons');
 });
+
+
+
+// In routes/web.php
+Route::prefix('admin')->middleware(['auth'])->group(function () {
+    // Job Locations
+    Route::get('/job-locations', [App\Http\Controllers\Job\JobIndex\JobLocationController::class, 'index'])
+        ->name('admin.job-locations');
+    Route::get('/job-locations/data', [App\Http\Controllers\Job\JobIndex\JobLocationController::class, 'getData'])
+        ->name('admin.job-locations.data');
+    Route::get('/job-locations/countries', [App\Http\Controllers\Job\JobIndex\JobLocationController::class, 'getCountries'])
+        ->name('admin.job-locations.countries');
+    Route::get('/job-locations/{id}', [App\Http\Controllers\Job\JobIndex\JobLocationController::class, 'show'])
+        ->name('admin.job-locations.show');
+    Route::post('/job-locations', [App\Http\Controllers\Job\JobIndex\JobLocationController::class, 'store'])
+        ->name('admin.job-locations.store');
+    Route::put('/job-locations/{id}', [App\Http\Controllers\Job\JobIndex\JobLocationController::class, 'update'])
+        ->name('admin.job-locations.update');
+    Route::post('/job-locations/{id}', [App\Http\Controllers\Job\JobIndex\JobLocationController::class, 'update'])
+        ->name('admin.job-locations.update-post');
+    Route::delete('/job-locations/{id}', [App\Http\Controllers\Job\JobIndex\JobLocationController::class, 'destroy'])
+        ->name('admin.job-locations.destroy');
+    Route::post('/job-locations/{id}/toggle-status', [App\Http\Controllers\Job\JobIndex\JobLocationController::class, 'toggleStatus'])
+        ->name('admin.job-locations.toggle-status');
+
+});
+
+
+use App\Http\Controllers\Job\JobIndex\CompanyController;
+
+// ============================================
+// ADMIN ROUTES
+// ============================================
+Route::prefix('admin')->middleware(['auth'])->group(function () {
+    Route::prefix('companies')->group(function () {
+        
+        Route::get('/', [CompanyController::class, 'index'])
+            ->name('admin.companies');
+        Route::get('/data', [CompanyController::class, 'getData'])
+            ->name('admin.companies.data');
+        Route::get('/form-data', [CompanyController::class, 'getFormData'])
+            ->name('admin.companies.form-data');
+        Route::get('/{id}', [CompanyController::class, 'show'])
+            ->name('admin.companies.show');
+        Route::post('/', [CompanyController::class, 'store'])
+            ->name('admin.companies.store');
+        Route::put('/{id}', [CompanyController::class, 'update'])
+            ->name('admin.companies.update');
+        Route::post('/{id}', [CompanyController::class, 'update'])
+            ->name('admin.companies.update-post');
+        Route::delete('/{id}', [CompanyController::class, 'destroy'])
+            ->name('admin.companies.destroy');
+        Route::post('/{id}/toggle-status', [CompanyController::class, 'toggleStatus'])
+            ->name('admin.companies.toggle-status');
+        Route::post('/{id}/toggle-verified', [CompanyController::class, 'toggleVerified'])
+            ->name('admin.companies.toggle-verified');
+    });
+});
+
+
+Route::prefix('admin')->middleware(['auth'])->group(function () {
+    // Job Posts
+    Route::prefix('job-posts')->group(function () {
+        Route::get('/', [App\Http\Controllers\Job\JobIndex\JobPostController::class, 'index'])
+            ->name('admin.job-posts');
+        Route::get('/data', [App\Http\Controllers\Job\JobIndex\JobPostController::class, 'getData'])
+            ->name('admin.job-posts.data');
+        Route::get('/form-data', [App\Http\Controllers\Job\JobIndex\JobPostController::class, 'getFormData'])
+            ->name('admin.job-posts.form-data');
+        Route::get('/{id}', [App\Http\Controllers\Job\JobIndex\JobPostController::class, 'show'])
+            ->name('admin.job-posts.show');
+        Route::put('/{id}', [App\Http\Controllers\Job\JobIndex\JobPostController::class, 'update'])
+            ->name('admin.job-posts.update');
+        Route::post('/{id}', [App\Http\Controllers\Job\JobIndex\JobPostController::class, 'update'])
+            ->name('admin.job-posts.update-post');
+        Route::delete('/{id}', [App\Http\Controllers\Job\JobIndex\JobPostController::class, 'destroy'])
+            ->name('admin.job-posts.destroy');
+        Route::post('/{id}/toggle-status', [App\Http\Controllers\Job\JobIndex\JobPostController::class, 'toggleStatus'])
+            ->name('admin.job-posts.toggle-status');
+        Route::post('/{id}/toggle-featured', [App\Http\Controllers\Job\JobIndex\JobPostController::class, 'toggleFeatured'])
+            ->name('admin.job-posts.toggle-featured');
+        Route::post('/{id}/feature', [App\Http\Controllers\Job\JobIndex\JobPostController::class, 'feature'])
+            ->name('admin.job-posts.feature');
+    });
+});
