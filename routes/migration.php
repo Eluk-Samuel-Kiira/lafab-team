@@ -260,3 +260,39 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
             ->name('admin.job-posts.feature');
     });
 });
+
+
+
+
+use App\Http\Controllers\Job\JobPosting\AiJobController;
+
+
+
+// AI Job Posting Routes
+Route::prefix('admin/ai')->middleware(['auth'])->group(function () {
+    Route::get('/job-posting/{country?}', function ($country = 'AU') {
+        $countryNames = [
+            'AU' => 'Australia',
+            'UG' => 'Uganda',
+            'KE' => 'Kenya',
+            'TZ' => 'Tanzania',
+            'RW' => 'Rwanda',
+            'MW' => 'Malawi',
+            'ZM' => 'Zambia',
+            'SG' => 'Singapore',
+        ];
+        return view('job.job-posting.ai-posting', [
+            'selectedCountry' => $country,
+            'countryName' => $countryNames[$country] ?? 'Select Country',
+        ]);
+    })->name('admin.ai.job-posting');
+});
+
+// AI API Routes (for AJAX calls)
+Route::prefix('ai')->middleware(['auth'])->group(function () {
+    Route::get('/models', [AiJobController::class, 'getModels'])->name('ai.models');
+    Route::post('/extract-job', [AiJobController::class, 'extractJobData'])->name('ai.extract-job');
+    Route::post('/extract-image', [AiJobController::class, 'extractFromImage'])->name('ai.extract-image');
+    Route::post('/enhance-field', [AiJobController::class, 'enhanceField'])->name('ai.enhance-field');
+    Route::post('/generate-from-title', [AiJobController::class, 'generateFromTitle'])->name('ai.generate-from-title');
+});

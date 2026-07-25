@@ -24,7 +24,7 @@ class JobPostController extends Controller
      */
     public function index()
     {
-        return view('job.job-index.job-posts');
+        return view('job.job-posting.ai-posting');
     }
 
     /**

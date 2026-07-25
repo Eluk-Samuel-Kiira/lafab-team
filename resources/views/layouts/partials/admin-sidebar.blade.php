@@ -64,8 +64,10 @@
                         </div>
                     </div>
                     
+                    {{-- JOBS --}}
+
                     {{-- AI Job Posting --}}
-                    <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.companies*', 'admin.job-locations*', 'admin.job-posts*', 'admin.job-applications*') ? 'show here' : '' }}">
+                    <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.ai.job-posting*') ? 'show here' : '' }}">
                         <span class="menu-link">
                             <span class="menu-icon">
                                 <i class="ki-duotone ki-rocket fs-2">
@@ -77,18 +79,27 @@
                             <span class="menu-arrow"></span>
                         </span>
                         <div class="menu-sub menu-sub-accordion">
+                            @php
+                                $countries = [
+                                    'AU' => '🇦🇺 Australia',
+                                    'UG' => '🇺🇬 Uganda',
+                                    'KE' => '🇰🇪 Kenya',
+                                    'TZ' => '🇹🇿 Tanzania',
+                                    'RW' => '🇷🇼 Rwanda',
+                                    'MW' => '🇲🇼 Malawi',
+                                    'ZM' => '🇿🇲 Zambia',
+                                    'SG' => '🇸🇬 Singapore',
+                                ];
+                            @endphp
+                            @foreach($countries as $code => $name)
                             <div class="menu-item">
-                                <a class="menu-link {{ request()->routeIs('admin.companies*') ? 'active' : '' }}" href="{{ route('admin.companies') }}">
+                                <a class="menu-link {{ request()->route('country') == $code ? 'active' : '' }}" 
+                                href="{{ route('admin.ai.job-posting', $code) }}">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                    <span class="menu-title">Australia</span>
+                                    <span class="menu-title">{{ $name }}</span>
                                 </a>
                             </div>
-                            <div class="menu-item">
-                                <a class="menu-link {{ request()->routeIs('admin.job-locations*') ? 'active' : '' }}" href="{{ route('admin.job-locations') }}">
-                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                    <span class="menu-title">Malawi</span>
-                                </a>
-                            </div>
+                            @endforeach
                         </div>
                     </div>
 
