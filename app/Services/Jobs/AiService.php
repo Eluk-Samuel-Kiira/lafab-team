@@ -27,9 +27,6 @@ class AiService
         $this->countrySettings = config('ai.country_settings', []);
     }
 
-    /**
-     * Get available models with their configuration
-     */
     public function getAvailableModels(): array
     {
         $models = [];
@@ -47,40 +44,84 @@ class AiService
         return $models;
     }
 
-    /**
-     * Check if a model is enabled (has API key)
-     */
     public function isModelEnabled(string $model): bool
     {
         $config = $this->config[$model] ?? null;
         return $config && !empty($config['api_key']);
     }
 
-    /**
-     * Get model configuration
-     */
     public function getModelConfig(string $model): ?array
     {
         return $this->config[$model] ?? null;
     }
 
     /**
-     * Extract job data from text or URL
+     * Extract job data from text or URL.
+     *
+     * For URL sources this now actually fetches the page (previously the raw
+     * URL string itself was sent to the model as "content", which no plain
+     * chat-completion endpoint can browse - it was just guessing/hallucinating).
      */
-    public function extractJobData(string $content, string $sourceType = 'text', ?string $model = null): array
+    public function extractJobData(string $content, string $sourceType = 'text', ?string $model = null, ?string $country = null): array
     {
         $model = $model ?? $this->defaultModel;
+
+        if ($sourceType === 'url') {
+            $content = $this->fetchUrlContent($content);
+        }
+
         $prompt = $this->buildExtractionPrompt($content, $sourceType);
 
-        return $this->callWithFallback($model, $prompt, function($m, $key) use ($prompt) {
+        $result = $this->callWithFallback($model, $prompt, function ($m, $key) use ($prompt) {
             return $this->callAiApi($m, $key, $prompt);
-        });
+        }, expectJson: true);
+
+        if (!empty($result['error'])) {
+            throw new \Exception($result['message'] ?? 'No valid job posting could be found in the provided content.');
+        }
+
+        $result = $this->applySmartDefaults($result, $country);
+        return $this->applyArialFontToContentFields($result);
     }
 
     /**
-     * Extract job data from image
+     * Fetch and clean a URL's page content so the AI actually has real
+     * page text to extract from, instead of just the URL string.
      */
-    public function extractFromImage(string $imageBase64, ?string $model = null): array
+    protected function fetchUrlContent(string $url): string
+    {
+        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            throw new \Exception('The provided URL is not valid.');
+        }
+
+        try {
+            $response = Http::withHeaders([
+                'User-Agent' => 'Mozilla/5.0 (compatible; JobBoardBot/1.0)',
+            ])->timeout(20)->get($url);
+        } catch (\Exception $e) {
+            throw new \Exception('This job posting does not exist - the URL could not be reached: ' . $e->getMessage());
+        }
+
+        if (!$response->successful()) {
+            throw new \Exception("This job posting does not exist - the page returned HTTP {$response->status()}.");
+        }
+
+        $html = $response->body();
+        $text = preg_replace('#<script\b[^>]*>.*?</script>#is', ' ', $html);
+        $text = preg_replace('#<style\b[^>]*>.*?</style>#is', ' ', $text);
+        $text = strip_tags($text);
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5);
+        $text = preg_replace('/\s+/', ' ', $text);
+        $text = trim($text);
+
+        if (mb_strlen($text) < 200) {
+            throw new \Exception('This job posting does not exist - no readable job content was found at that URL.');
+        }
+
+        return mb_substr($text, 0, 18000);
+    }
+
+    public function extractFromImage(string $imageBase64, ?string $model = null, ?string $country = null): array
     {
         $model = $model ?? $this->defaultModel;
 
@@ -95,93 +136,115 @@ class AiService
 
         $prompt = $this->buildImageExtractionPrompt();
 
-        return $this->callWithFallback($model, $prompt, function($m, $key) use ($prompt, $imageBase64) {
+        $result = $this->callWithFallback($model, $prompt, function ($m, $key) use ($prompt, $imageBase64) {
             return $this->callAiApi($m, $key, $prompt, $imageBase64);
-        });
+        }, expectJson: true);
+
+        if (!empty($result['error'])) {
+            throw new \Exception($result['message'] ?? 'No job details could be read from the image.');
+        }
+
+        $result = $this->applySmartDefaults($result, $country);
+        return $this->applyArialFontToContentFields($result);
     }
 
     /**
-     * Enhance a field using AI
+     * Enhance a field using AI. This is plain HTML text, NOT JSON - it must
+     * NOT be routed through the JSON parser (that was the reason every
+     * "AI Enhance" call previously returned the literal string "[]").
      */
     public function enhanceField(string $fieldName, string $content, string $instruction, ?string $model = null): string
     {
         $model = $model ?? $this->defaultModel;
         $prompt = $this->buildEnhancePrompt($fieldName, $content, $instruction);
 
-        $result = $this->callWithFallback($model, $prompt, function($m, $key) use ($prompt) {
+        $text = $this->callWithFallback($model, $prompt, function ($m, $key) use ($prompt) {
             return $this->callAiApi($m, $key, $prompt);
-        });
+        }, expectJson: false);
 
-        return $this->extractTextFromResult($result);
+        return is_string($text) ? trim($text) : $this->extractTextFromResult($text);
     }
 
-    /**
-     * Generate full job post from title
-     */
     public function generateFromTitle(string $title, ?string $company = null, ?string $country = null, ?string $model = null): array
     {
         $model = $model ?? $this->defaultModel;
         $prompt = $this->buildGeneratePrompt($title, $company, $country);
 
-        $result = $this->callWithFallback($model, $prompt, function($m, $key) use ($prompt) {
+        $result = $this->callWithFallback($model, $prompt, function ($m, $key) use ($prompt) {
             return $this->callAiApi($m, $key, $prompt);
-        });
+        }, expectJson: true);
 
-        $data = $this->ensureArray($result);
-        return $this->applySmartDefaults($data, $country);
+        $result = $this->applySmartDefaults($result, $country);
+        return $this->applyArialFontToContentFields($result);
     }
 
     /**
-     * Call AI API with fallback support - with better error messages
+     * Call AI API with fallback support.
+     *
+     * When $expectJson is true, a malformed/empty response from one model is
+     * treated as that model's failure and the NEXT model in the fallback
+     * chain is tried automatically - previously a parse failure just quietly
+     * returned an empty array disguised as a success.
      */
-    protected function callWithFallback(string $primaryModel, string $prompt, callable $callFn): array
+    protected function callWithFallback(string $primaryModel, string $prompt, callable $callFn, bool $expectJson = true): array|string
     {
         $errors = [];
         $models = array_unique(array_merge([$primaryModel], $this->fallbackModels));
 
         foreach ($models as $model) {
             if (!$this->isModelEnabled($model)) {
-                $errors[] = "Model '{$model}' is not enabled (missing API key).";
+                $errors[] = "[{$model}] not enabled (missing API key).";
                 continue;
             }
 
             try {
                 $config = $this->getModelConfig($model);
-                $result = $callFn($model, $config['api_key']);
-                return $this->ensureArray($result);
-            } catch (\Exception $e) {
-                // Extract a clean error message
-                $errorMsg = $e->getMessage();
-                // Try to extract just the API error message
-                if (strpos($errorMsg, 'API error') !== false) {
-                    $parts = explode('API error', $errorMsg);
-                    $errorMsg = trim(end($parts));
-                    // Try to decode JSON error
-                    $jsonStart = strpos($errorMsg, '{');
-                    if ($jsonStart !== false) {
-                        $jsonPart = substr($errorMsg, $jsonStart);
-                        $decoded = json_decode($jsonPart, true);
-                        if ($decoded && isset($decoded['error'])) {
-                            $errorMsg = $decoded['error']['message'] ?? $decoded['error'] ?? $errorMsg;
-                        }
-                    }
+                $raw = $callFn($model, $config['api_key']);
+
+                if (!$expectJson) {
+                    // Plain text expected (enhanceField) - no JSON coercion.
+                    return is_array($raw) ? $this->extractTextFromResult($raw) : (string) $raw;
                 }
-                $errors[] = "[{$model}] " . $errorMsg;
-                Log::warning("AI call failed for model '{$model}'", [
-                    'error' => $errorMsg,
-                    'fallback' => true,
-                ]);
+
+                return $this->parseJsonOrFail($raw, $model);
+            } catch (\Exception $e) {
+                $errors[] = "[{$model}] " . $e->getMessage();
+                Log::warning("AI call failed for model '{$model}'", ['error' => $e->getMessage()]);
             }
         }
 
-        $errorMessage = "All AI models failed: " . implode(' | ', $errors);
-        throw new \Exception($errorMessage);
+        throw new \Exception('All AI models failed: ' . implode(' | ', $errors));
     }
 
-
     /**
-     * Call specific AI API
+     * Strictly parse a model's output into a non-empty array, or throw.
+     * Throwing here (rather than returning []) is what lets callWithFallback
+     * fall through to the next model instead of silently "succeeding" with
+     * nothing to show on the form.
      */
+    protected function parseJsonOrFail(mixed $result, string $model): array
+    {
+        if (is_array($result) && !empty($result)) {
+            return $result;
+        }
+
+        if (is_string($result)) {
+            $clean = preg_replace('/^```(?:json)?\s*/i', '', $result);
+            $clean = preg_replace('/\s*```\s*$/i', '', $clean);
+            $clean = trim($clean);
+
+            $decoded = json_decode($clean, true);
+            if (is_array($decoded) && !empty($decoded)) {
+                return $decoded;
+            }
+
+            Log::warning("AI model '{$model}' returned unparseable JSON", ['full_response' => $result]);
+            throw new \Exception("returned a response that could not be parsed as JSON.");
+        }
+
+        throw new \Exception('returned an empty response.');
+    }
+
     protected function callAiApi(string $model, string $apiKey, string $prompt, ?string $imageBase64 = null): array|string
     {
         $config = $this->getModelConfig($model);
@@ -196,7 +259,6 @@ class AiService
         $headers = ['Content-Type' => 'application/json'];
         $body = [];
 
-        // Use the model name directly instead of provider
         switch ($model) {
             case 'openai':
                 $headers['Authorization'] = "Bearer {$apiKey}";
@@ -233,7 +295,7 @@ class AiService
                 break;
 
             case 'gemini':
-                $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={$apiKey}";
+                $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$modelName}:generateContent?key={$apiKey}";
                 $parts = $imageBase64
                     ? [
                         ['inline_data' => ['mime_type' => 'image/jpeg', 'data' => $imageBase64]],
@@ -247,23 +309,7 @@ class AiService
                 break;
 
             case 'grok':
-                $headers['Authorization'] = "Bearer {$apiKey}";
-                $body = [
-                    'model' => $modelName,
-                    'max_tokens' => $maxTokens,
-                    'messages' => [['role' => 'user', 'content' => $prompt]],
-                ];
-                break;
-
             case 'cohere':
-                $headers['Authorization'] = "Bearer {$apiKey}";
-                $body = [
-                    'model' => $modelName,
-                    'max_tokens' => $maxTokens,
-                    'messages' => [['role' => 'user', 'content' => $prompt]],
-                ];
-                break;
-
             case 'mistral':
                 $headers['Authorization'] = "Bearer {$apiKey}";
                 $body = [
@@ -283,7 +329,6 @@ class AiService
             ->post($endpoint, $body);
 
         if (!$response->successful()) {
-            // Get a cleaner error message
             $errorBody = $response->body();
             $errorData = json_decode($errorBody, true);
             $errorMessage = $errorData['error']['message'] ?? $errorData['error'] ?? $errorBody;
@@ -291,41 +336,16 @@ class AiService
         }
 
         $data = $response->json();
-        $text = '';
+        $text = match ($model) {
+            'openai', 'grok', 'cohere', 'mistral' => $data['choices'][0]['message']['content'] ?? '',
+            'claude' => $data['content'][0]['text'] ?? '',
+            'gemini' => $data['candidates'][0]['content']['parts'][0]['text'] ?? '',
+            default => json_encode($data),
+        };
 
-        switch ($model) {
-            case 'openai':
-                $text = $data['choices'][0]['message']['content'] ?? '';
-                break;
-            case 'claude':
-                $text = $data['content'][0]['text'] ?? '';
-                break;
-            case 'gemini':
-                $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
-                break;
-            case 'grok':
-            case 'cohere':
-            case 'mistral':
-                $text = $data['choices'][0]['message']['content'] ?? '';
-                break;
-            default:
-                $text = json_encode($data);
-        }
-
-        // Strip markdown fences
-        $clean = preg_replace('/^```(?:json)?\s*/i', '', $text);
-        $clean = preg_replace('/\s*```\s*$/i', '', $clean);
-        $clean = preg_replace('/```(?:json)?/i', '', $clean);
-        $clean = trim($clean);
-
-        $decoded = json_decode($clean, true);
-        return $decoded ?? $text;
+        return $text;
     }
 
-
-    /**
-     * Extract plain text from various result shapes
-     */
     protected function extractTextFromResult(mixed $result): string
     {
         if (is_string($result)) return $result;
@@ -338,102 +358,114 @@ class AiService
             }
             $first = reset($result);
             if (is_string($first)) return $first;
-            return json_encode($result);
+            return '';
         }
 
         return (string) $result;
     }
 
     /**
-     * Ensure result is an array
+     * Wrap the rich-text content fields in an Arial font style, applied here
+     * in PHP (so it's guaranteed to produce valid, correctly-escaped HTML)
+     * rather than asking the AI to embed style="..." attributes itself -
+     * that was producing unescaped quotes inside the JSON string values,
+     * which is exactly what was breaking json_decode() and causing
+     * extraction results to silently come back empty.
      */
-    protected function ensureArray(mixed $result): array
+    protected function applyArialFontToContentFields(array $data): array
     {
-        if (is_array($result)) {
-            return $result;
-        }
-
-        if (is_string($result)) {
-            // Strip markdown fences
-            $clean = preg_replace('/^```(?:json)?\s*/i', '', $result);
-            $clean = preg_replace('/\s*```\s*$/i', '', $clean);
-            $clean = preg_replace('/```(?:json)?/i', '', $clean);
-            $clean = trim($clean);
-
-            $decoded = json_decode($clean, true);
-            if (is_array($decoded)) {
-                return $decoded;
+        foreach (['job_description', 'responsibilities', 'qualifications', 'application_procedure'] as $field) {
+            if (!empty($data[$field]) && is_string($data[$field])) {
+                $data[$field] = $this->wrapInArialFont($data[$field]);
             }
-
-            Log::warning('AI returned unparseable string', ['snippet' => mb_substr($result, 0, 300)]);
-            return [];
         }
-
-        return [];
+        return $data;
     }
 
-
-
+    protected function wrapInArialFont(string $content): string
+    {
+        if (str_contains($content, 'rich-editor-arial-wrap')) {
+            return $content; // already wrapped
+        }
+        return '<div class="rich-editor-arial-wrap" style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.6;">' . $content . '</div>';
+    }
 
     /**
-     * Build extraction prompt - MODIFIED to preserve content exactly
+     * Build extraction prompt.
+     *
+     * Deliberately does NOT ask the model to add any inline style attributes -
+     * that was the direct cause of broken JSON (see wrapInArialFont above).
+     * Arial styling is applied server-side after parsing succeeds instead.
      */
     protected function buildExtractionPrompt(string $content, string $sourceType): string
     {
         $twoWeeksAhead = Carbon::now()->addWeeks(2)->format('Y-m-d');
-        
-        $sourceInstruction = $sourceType === 'url' 
-            ? 'The content is a URL. You MUST visit this URL, read the entire page content, and extract the job posting details from it. If the URL does not contain a valid job posting, return an error.'
-            : 'The content is pasted job description text. Extract all job details from it exactly as provided.';
+
+        $sourceInstruction = $sourceType === 'url'
+            ? 'The CONTENT below was fetched directly from the job posting page. Extract the job details from it.'
+            : 'The CONTENT below is pasted job description text.';
 
         return <<<PROMPT
-You are an expert job-board agent. Your task is to extract job posting information.
+You are an expert job-board data extraction agent.
 
 SOURCE TYPE: {$sourceType}
 {$sourceInstruction}
 
-CRITICAL RULES:
-1. If this is a URL, you MUST fetch and read the page content to extract job details. If the URL does not contain a valid job posting, return an error response.
-2. Return ONLY a valid JSON object — no explanation, no markdown, no code blocks.
-3. For pasted content, preserve the EXACT text as provided. DO NOT summarize, rewrite, or modify the content in any way.
-4. For HTML fields (job_description, responsibilities, qualifications, application_procedure), preserve the EXACT formatting including tables, lists, and structure.
-5. If any field is completely missing from the content, apply the smart defaults below.
-6. All text should be in Arial font style.
+ABSOLUTE RULE - PRESERVE VERBATIM:
+If job_description, responsibilities, qualifications, skills, or application_procedure are present in
+the content, copy them into the JSON EXACTLY as given - same wording, same order, same structure,
+including any tables (as HTML <table> markup). Do NOT summarize, shorten, paraphrase, or "clean up"
+anything that is actually present. Only WRITE new content for a field when that field is completely
+absent from the source.
 
-SMART DEFAULTS (apply ONLY when field is completely missing):
+JSON FORMATTING RULE (important - broken JSON here means the whole extraction fails):
+- Return ONLY a single valid JSON object. No markdown fences, no commentary before or after.
+- Do NOT add any HTML style="..." attributes or any other attributes containing double quotes.
+  Use plain HTML tags only (<p>, <ul>, <li>, <strong>, <table>, <tr>, <td>, etc.) with no attributes,
+  so there is no risk of an unescaped quote breaking the JSON.
+- If you must quote something inside a string value, escape it as \\" - never leave a bare " inside
+  a JSON string.
+
+IF THE CONTENT DOES NOT DESCRIBE A REAL JOB POSTING (e.g. an error page, login wall, empty page, or
+unrelated content), respond with ONLY this JSON and nothing else:
+{"error": true, "message": "No valid job posting was found in the provided content."}
+
+SMART DEFAULTS (apply ONLY when a field is completely missing from the source):
 - employment_type: "full-time"
 - deadline: "{$twoWeeksAhead}"
 - experience_level_name: "entry level"
 - education_level_name: "Certificate"
 - location_type: "on-site"
-- is_telephone_call: true (if telephone is present but WhatsApp is not explicitly mentioned)
+- is_telephone_call: true (if telephone is present but WhatsApp is not mentioned)
 - is_whatsapp_contact: false (unless WhatsApp is explicitly mentioned)
+- For job_description/responsibilities/qualifications/skills that are completely absent: write
+  professional, role-appropriate content based on the job_title (and company_name if known).
 
-FIELDS TO EXTRACT (preserve exact content for each):
+FIELDS TO RETURN:
 {
-  "job_title": "exact job title from content",
-  "company_name": "exact company name from content",
-  "job_description": "EXACT job description as provided — preserve all HTML, tables, formatting, lists exactly as they appear. DO NOT modify or summarize.",
-  "responsibilities": "EXACT responsibilities as provided — preserve all HTML, lists, and formatting. DO NOT modify or summarize.",
-  "qualifications": "EXACT qualifications as provided — preserve all HTML, lists, and formatting. DO NOT modify or summarize.",
-  "skills": "EXACT skills as provided — preserve the exact format. DO NOT modify or summarize.",
-  "application_procedure": "EXACT application procedure as provided — preserve all HTML, formatting, and instructions. DO NOT modify or summarize.",
+  "job_title": "exact job title",
+  "company_name": "exact company name, else null",
+  "job_description": "verbatim if present, else generated - plain HTML, no attributes",
+  "responsibilities": "verbatim if present, else generated - plain HTML, no attributes",
+  "qualifications": "verbatim if present, else generated - plain HTML, no attributes",
+  "skills": "verbatim if present, else generated - comma-separated list",
+  "application_procedure": "verbatim if present, else generated - plain HTML, no attributes",
   "email": "contact email if mentioned, else null",
   "telephone": "phone number if mentioned, else null",
-  "deadline": "application deadline in YYYY-MM-DD format if mentioned, else use default",
-  "duty_station": "office or work location if mentioned, else null",
-  "location_type": "remote|hybrid|on-site if mentioned, else default",
-  "employment_type": "full-time|part-time|contract|internship|volunteer|temporary if mentioned, else default",
-  "salary_amount": "numeric salary amount if mentioned, else null",
-  "payment_period": "monthly|yearly|weekly|daily|hourly if mentioned, else null",
-  "currency": "currency code if mentioned, else use country default",
-  "meta_description": "155-character SEO description generated from job title and content",
-  "keywords": "comma-separated SEO keywords generated from job title",
-  "experience_level_name": "entry level|junior|mid level|senior|executive if mentioned, else default",
-  "education_level_name": "Certificate|Diploma|Bachelor's Degree|Master's Degree if mentioned, else default",
-  "industry_name": "industry sector if mentioned, else null",
-  "category_name": "job category if mentioned, else null",
-  "country_code": "country code from content or context, else null",
+  "deadline": "YYYY-MM-DD, from content if present else the default above",
+  "duty_station": "office/work location if mentioned, else null",
+  "location_type": "remote|hybrid|on-site",
+  "employment_type": "full-time|part-time|contract|internship|volunteer|temporary",
+  "salary_amount": "numeric amount if mentioned, else null",
+  "payment_period": "monthly|yearly|weekly|daily|hourly, else null",
+  "currency": "currency code if mentioned, else null",
+  "meta_description": "155-character SEO description generated from the job title/content",
+  "keywords": "comma-separated SEO keywords",
+  "experience_level_name": "entry level|junior|mid level|senior|executive",
+  "education_level_name": "Certificate|Diploma|Bachelor's Degree|Master's Degree",
+  "industry_name": "industry sector if identifiable, else null",
+  "category_name": "job category if identifiable, else null",
+  "country_code": "one of AU, UG, KE, TZ, RW, MW, ZM, SG if the job's country matches one of these, else null",
   "is_urgent": false,
   "is_featured": false,
   "is_resume_required": true,
@@ -445,51 +477,44 @@ FIELDS TO EXTRACT (preserve exact content for each):
   "work_hours": "work schedule if mentioned, else null"
 }
 
-CONTENT TO EXTRACT FROM:
+CONTENT:
 ---
 {$content}
 ---
-
-ERROR RESPONSE (if URL contains no job posting):
-{
-  "error": true,
-  "message": "No valid job posting found at the provided URL. Please check the URL and try again."
-}
 PROMPT;
     }
 
-    /**
-     * Build image extraction prompt - MODIFIED to preserve content
-     */
     protected function buildImageExtractionPrompt(): string
     {
-        return "Extract all job information visible in this image. Preserve the EXACT text as shown. Do NOT summarize or modify. Return a complete JSON object with the same fields as a standard job extraction. Preserve all formatting, tables, and lists exactly as they appear in the image.";
+        return "Extract all job information visible in this image. Preserve the EXACT text as shown - "
+            . "do not summarize or reword anything that is actually visible. Only generate content for "
+            . "fields that are completely absent from the image. Return ONLY a single valid JSON object "
+            . "with the same fields as a standard job extraction (job_title, company_name, job_description, "
+            . "responsibilities, qualifications, skills, application_procedure, email, telephone, deadline, "
+            . "duty_station, location_type, employment_type, salary_amount, payment_period, currency, "
+            . "meta_description, keywords, experience_level_name, education_level_name, industry_name, "
+            . "category_name, country_code, work_hours, and the is_* boolean flags). "
+            . "Do NOT include any HTML attributes (no style=\"...\", no class=\"...\") - use plain tags "
+            . "only, so nothing can break the JSON. If the image does not show a real job posting, return "
+            . "{\"error\": true, \"message\": \"No job posting could be read from this image.\"}";
     }
 
-    /**
-     * Build enhance field prompt - MODIFIED
-     */
     protected function buildEnhancePrompt(string $fieldName, string $content, string $instruction): string
     {
         return <<<PROMPT
 You are an expert HR copywriter. Your task: {$instruction}
 
 RULES:
-- Preserve the EXACT original content structure and formatting.
-- Only improve clarity and professionalism, do not change the meaning or remove content.
-- Use Arial font style throughout.
-- Return ONLY the improved content as clean HTML.
-- Use <p> for paragraphs and <ul><li> for lists.
+- Preserve the original meaning and any facts present; improve clarity and professionalism only.
+- Return ONLY the improved content as clean HTML using <p> and <ul><li> - no attributes on any tag.
 - Do NOT include explanations, markdown fences, or code blocks.
+- Do NOT wrap the response in JSON - return plain HTML text only.
 
-CURRENT CONTENT (preserve this structure):
+CURRENT CONTENT:
 {$content}
 PROMPT;
     }
 
-    /**
-     * Build generate from title prompt - MODIFIED
-     */
     protected function buildGeneratePrompt(string $title, ?string $company, ?string $country): string
     {
         $companyText = $company ? " at {$company}" : '';
@@ -497,15 +522,14 @@ PROMPT;
         $deadline = Carbon::now()->addWeeks(2)->format('Y-m-d');
 
         return <<<PROMPT
-You are an expert HR professional and job board agent. Generate a complete, professional job posting for a "{$title}"{$companyText}{$countryText}.
+Generate a complete, professional job posting for a "{$title}"{$companyText}{$countryText}.
 
-RULES:
-- Use Arial font style throughout.
-- Return ONLY a valid JSON object — no explanation, no markdown, no code blocks.
+Return ONLY a valid JSON object - no explanation, no markdown, no code blocks. Do not use any HTML
+attributes (no style="...") on any tag - plain <p>/<ul>/<li> only, so nothing can break the JSON.
 
 {
-  "job_description": "3-4 paragraph description as HTML with <p> tags — include role overview, company culture, and why someone should apply",
-  "responsibilities": "6-8 responsibilities as HTML <ul><li> list — be specific and action-oriented",
+  "job_description": "3-4 paragraphs as HTML with <p> tags",
+  "responsibilities": "6-8 items as HTML <ul><li> list",
   "qualifications": "required and preferred qualifications as HTML <ul><li> list with two sections",
   "skills": "comma-separated list of 8-12 relevant skills",
   "meta_description": "155-character SEO meta description",
@@ -520,133 +544,123 @@ PROMPT;
     }
 
     /**
-     * Apply smart defaults to extracted data
+     * Apply smart defaults - only fills fields that are genuinely missing.
      */
     protected function applySmartDefaults(array $data, ?string $country = null): array
     {
         $countrySettings = $country ? ($this->countrySettings[$country] ?? null) : null;
         $twoWeeksAhead = Carbon::now()->addWeeks(2)->format('Y-m-d');
 
-        // Ensure all fields exist with proper structure
-        $defaults = [
-            'job_title' => $data['job_title'] ?? '',
-            'company_name' => $data['company_name'] ?? '',
-            'job_description' => $data['job_description'] ?? '',
-            'responsibilities' => $data['responsibilities'] ?? '',
-            'qualifications' => $data['qualifications'] ?? '',
-            'skills' => $data['skills'] ?? '',
-            'application_procedure' => $data['application_procedure'] ?? '',
-            'email' => $data['email'] ?? null,
-            'telephone' => $data['telephone'] ?? null,
-            'deadline' => $data['deadline'] ?? $twoWeeksAhead,
-            'duty_station' => $data['duty_station'] ?? null,
-            'location_type' => $data['location_type'] ?? 'on-site',
-            'employment_type' => $data['employment_type'] ?? 'full-time',
-            'salary_amount' => $data['salary_amount'] ?? null,
-            'payment_period' => $data['payment_period'] ?? null,
-            'currency' => $data['currency'] ?? ($countrySettings['currency'] ?? 'AUD'),
-            'meta_description' => $data['meta_description'] ?? '',
-            'keywords' => $data['keywords'] ?? '',
-            'experience_level_name' => $data['experience_level_name'] ?? 'entry level',
-            'education_level_name' => $data['education_level_name'] ?? 'Certificate',
-            'industry_name' => $data['industry_name'] ?? null,
-            'category_name' => $data['category_name'] ?? null,
-            'country_code' => $data['country_code'] ?? $country,
-            'is_urgent' => $data['is_urgent'] ?? false,
-            'is_featured' => $data['is_featured'] ?? false,
-            'is_resume_required' => $data['is_resume_required'] ?? true,
-            'is_cover_letter_required' => $data['is_cover_letter_required'] ?? false,
-            'is_academic_documents_required' => $data['is_academic_documents_required'] ?? false,
-            'is_application_required' => $data['is_application_required'] ?? false,
-            'is_whatsapp_contact' => $data['is_whatsapp_contact'] ?? false,
-            'is_telephone_call' => $data['is_telephone_call'] ?? false,
-            'work_hours' => $data['work_hours'] ?? null,
+        $data['job_title'] = $data['job_title'] ?? '';
+        $data['company_name'] = $data['company_name'] ?? '';
+        $data['deadline'] = $data['deadline'] ?: $twoWeeksAhead;
+        $data['location_type'] = $data['location_type'] ?: 'on-site';
+        $data['employment_type'] = $data['employment_type'] ?: 'full-time';
+        $data['experience_level_name'] = $data['experience_level_name'] ?: 'entry level';
+        $data['education_level_name'] = $data['education_level_name'] ?: 'Certificate';
+        $data['currency'] = $data['currency'] ?: ($countrySettings['currency'] ?? 'AUD');
+        $data['country_code'] = $data['country_code'] ?? $country;
+        $data['is_resume_required'] = $data['is_resume_required'] ?? true;
+
+        foreach ([
+            'email', 'telephone', 'duty_station', 'salary_amount', 'payment_period',
+            'industry_name', 'category_name', 'work_hours',
+        ] as $optional) {
+            $data[$optional] = $data[$optional] ?? null;
+        }
+
+        foreach ([
+            'is_urgent', 'is_featured', 'is_cover_letter_required', 'is_academic_documents_required',
+            'is_application_required', 'is_whatsapp_contact', 'is_telephone_call',
+        ] as $flag) {
+            $data[$flag] = $data[$flag] ?? false;
+        }
+
+        // Only generate fallback content when the field is genuinely empty AND we have a title to work from.
+        if (empty(trim(strip_tags($data['job_description'] ?? ''))) && !empty($data['job_title'])) {
+            $data['job_description'] = $this->generateFallbackDescription($data['job_title'], $data['company_name'] ?: null, $data['duty_station']);
+        }
+        if (empty(trim(strip_tags($data['responsibilities'] ?? ''))) && !empty($data['job_title'])) {
+            $data['responsibilities'] = $this->generateFallbackResponsibilities($data['job_title'], $data['company_name'] ?: null);
+        }
+        if (empty(trim(strip_tags($data['qualifications'] ?? ''))) && !empty($data['job_title'])) {
+            $data['qualifications'] = $this->generateFallbackQualifications($data['job_title']);
+        }
+        if (empty(trim($data['skills'] ?? '')) && !empty($data['job_title'])) {
+            $data['skills'] = $this->generateFallbackSkills($data['job_title']);
+        }
+        if (empty(trim($data['meta_description'] ?? '')) && !empty($data['job_title'])) {
+            $data['meta_description'] = $this->generateFallbackMetaDescription($data['job_title'], $data['company_name'] ?: null, $data['duty_station']);
+        }
+        if (empty(trim($data['keywords'] ?? '')) && !empty($data['job_title'])) {
+            $data['keywords'] = $this->generateFallbackKeywords($data['job_title']);
+        }
+        $data['application_procedure'] = $data['application_procedure'] ?? '';
+
+        return $data;
+    }
+
+    protected function generateFallbackDescription(string $title, ?string $company, ?string $location): string
+    {
+        $companyText = $company ? " at {$company}" : '';
+        $locationText = $location ? " based in {$location}" : '';
+        return "<p>We are recruiting a <strong>{$title}</strong>{$companyText}{$locationText}.</p>
+<p>This is an exciting opportunity for a qualified professional to join our team and make a significant impact.</p>
+<p>If you have the right qualifications and experience, we encourage you to apply for this position.</p>";
+    }
+
+    protected function generateFallbackResponsibilities(string $title, ?string $company): string
+    {
+        $companyText = $company ? " at {$company}" : '';
+        return "<ul>
+<li>Perform all duties related to the <strong>{$title}</strong> role{$companyText}.</li>
+<li>Collaborate with team members to achieve organizational goals.</li>
+<li>Ensure timely delivery of assigned tasks and projects.</li>
+<li>Maintain high standards of quality and professionalism.</li>
+<li>Communicate effectively with stakeholders and team members.</li>
+<li>Contribute to the continuous improvement of processes.</li>
+</ul>";
+    }
+
+    protected function generateFallbackQualifications(string $title): string
+    {
+        return "<p><strong>Required Qualifications</strong></p>
+<ul>
+<li>Relevant qualification or experience for the {$title} role.</li>
+<li>Strong communication and interpersonal skills.</li>
+<li>Ability to work independently and as part of a team.</li>
+</ul>
+<p><strong>Preferred Qualifications</strong></p>
+<ul>
+<li>Experience in a similar role.</li>
+<li>Knowledge of industry best practices.</li>
+</ul>";
+    }
+
+    protected function generateFallbackSkills(string $title): string
+    {
+        return "Communication, Teamwork, Problem Solving, Time Management, Report Writing, Attention to Detail, Leadership, Adaptability";
+    }
+
+    protected function generateFallbackMetaDescription(string $title, ?string $company, ?string $location): string
+    {
+        $companyText = $company ? " at {$company}" : '';
+        $locationText = $location ? " in {$location}" : ' in East Africa';
+        $desc = "Apply for the {$title} position{$companyText}{$locationText}. Join our team and advance your career.";
+        return mb_substr($desc, 0, 155);
+    }
+
+    protected function generateFallbackKeywords(string $title): string
+    {
+        return "{$title}, jobs, career, employment, {$title} jobs, {$title} career, hiring";
+    }
+
+    public function getCountrySettings(string $countryCode): array
+    {
+        return $this->countrySettings[strtoupper($countryCode)] ?? [
+            'currency' => 'AUD',
+            'locale' => 'en_US',
+            'timezone' => 'UTC',
         ];
-
-        // Only generate fallbacks if fields are completely empty
-        if (empty($defaults['job_description']) && !empty($defaults['job_title'])) {
-            $defaults['job_description'] = $this->generateFallbackDescription(
-                $defaults['job_title'], 
-                $defaults['company_name'] ?? null, 
-                $defaults['duty_station'] ?? null
-            );
-        }
-        
-        if (empty($defaults['responsibilities']) && !empty($defaults['job_title'])) {
-            $defaults['responsibilities'] = $this->generateFallbackResponsibilities(
-                $defaults['job_title'], 
-                $defaults['company_name'] ?? null
-            );
-        }
-        
-        if (empty($defaults['qualifications']) && !empty($defaults['job_title'])) {
-            $defaults['qualifications'] = $this->generateFallbackQualifications($defaults['job_title']);
-        }
-        
-        if (empty($defaults['skills']) && !empty($defaults['job_title'])) {
-            $defaults['skills'] = $this->generateFallbackSkills($defaults['job_title']);
-        }
-        
-        if (empty($defaults['meta_description']) && !empty($defaults['job_title'])) {
-            $defaults['meta_description'] = $this->generateFallbackMetaDescription(
-                $defaults['job_title'], 
-                $defaults['company_name'] ?? null, 
-                $defaults['duty_station'] ?? null
-            );
-        }
-        
-        if (empty($defaults['keywords']) && !empty($defaults['job_title'])) {
-            $defaults['keywords'] = $this->generateFallbackKeywords($defaults['job_title']);
-        }
-
-        return $defaults;
     }
-
-    /**
-     * Wrap content in Arial font style
-     */
-    protected function wrapInArialFont(string $content): string
-    {
-        // If content already has font-family, add Arial
-        if (strpos($content, 'font-family') !== false) {
-            $content = preg_replace('/font-family\s*:\s*[^;]+;/i', 'font-family: Arial, sans-serif;', $content);
-        } else {
-            // Add Arial font style to the content
-            $content = '<div style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">' . $content . '</div>';
-        }
-        return $content;
-    }
-
-    /**
-     * Extract text from API response with better error handling
-     */
-    protected function extractTextFromApiResponse(array $data, string $model): string
-    {
-        $text = '';
-        
-        switch ($model) {
-            case 'openai':
-                $text = $data['choices'][0]['message']['content'] ?? '';
-                break;
-            case 'claude':
-                $text = $data['content'][0]['text'] ?? '';
-                break;
-            case 'gemini':
-                $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
-                break;
-            case 'cohere':
-                $text = $data['message']['content'][0]['text'] ?? '';
-                break;
-            case 'grok':
-            case 'mistral':
-                $text = $data['choices'][0]['message']['content'] ?? '';
-                break;
-            default:
-                $text = json_encode($data);
-        }
-
-        return $text;
-    }
-
 }
-

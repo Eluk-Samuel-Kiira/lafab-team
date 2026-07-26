@@ -49,7 +49,13 @@
         try {
             const result = await apiFetch(`${AI_API_BASE}/extract-job`, {
                 method: 'POST',
-                body: JSON.stringify({ model, content, source_type: sourceType }),
+                body: JSON.stringify({
+                    model,
+                    content,
+                    source_type: sourceType,
+                    country: document.getElementById('f_country_code')?.value || null,
+                }),
+
             });
 
             // Check for error response
@@ -58,7 +64,7 @@
             }
 
             extractedData = result.data;
-            console.log('Extracted data received:', extractedData);
+            // console.log('Extracted data received:', extractedData);
             
             // Render preview
             renderExtractedPreview(result.data);
@@ -244,15 +250,13 @@
             toast('No extracted data. Please extract first.', 'warning');
             return;
         }
-
+    
         const d = extractedData;
-        console.log('Applying extracted data:', d);
-
-        // ========== 1. PLAIN TEXT FIELDS ==========
+    
+        // ---- Plain text fields ----
         const fieldMap = {
             job_title: 'f_job_title',
             duty_station: 'f_duty_station',
-            application_procedure: 'f_application_procedure',
             email: 'f_email',
             telephone: 'f_telephone',
             salary_amount: 'f_salary_amount',
@@ -261,244 +265,34 @@
             keywords: 'f_keywords',
             work_hours: 'f_work_hours',
         };
-        
         Object.entries(fieldMap).forEach(([key, id]) => {
             if (d[key] !== undefined && d[key] !== null && d[key] !== '') {
-                const el = document.getElementById(id);
-                if (el) {
-                    el.value = d[key];
-                    console.log(`✅ Set ${key} -> ${id}:`, d[key]);
-                }
-            }
-        });
-
-        // ========== 2. DEADLINE ==========
-        if (d.deadline) {
-            const el = document.getElementById('f_deadline');
-            if (el) {
-                // Format deadline if needed
-                let deadlineValue = d.deadline;
-                // If it's in YYYY-MM-DD format, keep it
-                if (deadlineValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                    el.value = deadlineValue;
-                } else {
-                    // Try to parse and format
-                    try {
-                        const date = new Date(deadlineValue);
-                        if (!isNaN(date.getTime())) {
-                            el.value = date.toISOString().split('T')[0];
-                        }
-                    } catch(e) {
-                        el.value = deadlineValue;
-                    }
-                }
-                console.log('✅ Set deadline:', el.value);
-            }
-        }
-
-        // ========== 3. SELECT DROPDOWNS ==========
-        // Employment Type
-        if (d.employment_type) {
-            const el = document.getElementById('f_employment_type');
-            if (el) {
-                const options = Array.from(el.options);
-                const match = options.find(opt => opt.value.toLowerCase() === d.employment_type.toLowerCase());
-                if (match) {
-                    el.value = match.value;
-                    console.log('✅ Set employment_type:', match.value);
-                }
-            }
-        }
-        
-        // Location Type
-        if (d.location_type) {
-            const el = document.getElementById('f_location_type');
-            if (el) {
-                const options = Array.from(el.options);
-                const match = options.find(opt => opt.value.toLowerCase() === d.location_type.toLowerCase());
-                if (match) {
-                    el.value = match.value;
-                    console.log('✅ Set location_type:', match.value);
-                }
-            }
-        }
-        
-        // Payment Period
-        if (d.payment_period) {
-            const el = document.getElementById('f_payment_period');
-            if (el) {
-                const options = Array.from(el.options);
-                const match = options.find(opt => opt.value.toLowerCase() === d.payment_period.toLowerCase());
-                if (match) {
-                    el.value = match.value;
-                    console.log('✅ Set payment_period:', match.value);
-                }
-            }
-        }
-
-        // ========== 4. RICH TEXT EDITORS ==========
-        const richMap = {
-            job_description: 'f_job_description_editor',
-            responsibilities: 'f_responsibilities_editor',
-            qualifications: 'f_qualifications_editor',
-            skills: 'f_skills_editor',
-            application_procedure: 'f_application_procedure_editor',
-        };
-        
-        Object.entries(richMap).forEach(([key, editorId]) => {
-            if (d[key] && d[key] !== '' && d[key] !== '<br>' && d[key] !== '<p><br></p>') {
-                let content = d[key];
-                // Wrap in Arial font if not already
-                if (content && !content.includes('font-family')) {
-                    content = `<div style="font-family: Arial, sans-serif;">${content}</div>`;
-                }
-                if (typeof richEditorSet === 'function') {
-                    richEditorSet(editorId, content);
-                    console.log(`✅ Set ${key} -> ${editorId}`);
-                } else {
-                    // Fallback: set hidden input directly
-                    const hidden = document.getElementById(editorId.replace('_editor', '') + '_hidden');
-                    if (hidden) {
-                        hidden.value = content;
-                        console.log(`✅ Set ${key} -> hidden input`);
-                    }
-                }
-            }
-        });
-
-        // ========== 5. COUNTRY SELECTOR ==========
-        if (d.country_code) {
-            const countrySelect = document.getElementById('f_country_code');
-            if (countrySelect) {
-                const options = Array.from(countrySelect.options);
-                const match = options.find(opt => opt.value === d.country_code);
-                if (match) {
-                    countrySelect.value = d.country_code;
-                    countrySelect.dispatchEvent(new Event('change', { bubbles: true }));
-                    console.log('✅ Set country_code:', d.country_code);
-                }
-            }
-        }
-
-        // ========== 6. SEARCHABLE DROPDOWNS ==========
-        // Try to auto-select dropdowns
-        if (typeof autoSelectDropdowns === 'function') {
-            autoSelectDropdowns(d);
-            console.log('✅ Auto-selected dropdowns');
-        } else {
-            console.warn('autoSelectDropdowns function not found');
-        }
-
-        // ========== 7. CHECKBOXES ==========
-        const checkMap = {
-            is_urgent: 'f_urgent',
-            is_featured: 'f_featured',
-            is_verified: 'f_verified',
-            is_quick_gig: 'f_quickgig',
-            is_resume_required: 'f_resume',
-            is_cover_letter_required: 'f_cover',
-            is_academic_documents_required: 'f_academic',
-            is_application_required: 'f_appletter',
-            is_whatsapp_contact: 'f_whatsapp',
-            is_telephone_call: 'f_telcall',
-        };
-        
-        Object.entries(checkMap).forEach(([key, id]) => {
-            if (d[key] !== undefined && d[key] !== null) {
-                const el = document.getElementById(id);
-                if (el) {
-                    el.checked = !!d[key];
-                    console.log(`✅ Set ${key} -> ${id}:`, !!d[key]);
-                }
-            }
-        });
-
-        // ========== 8. SCROLL TO TOP ==========
-        const titleField = document.getElementById('f_job_title');
-        if (titleField) {
-            titleField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            titleField.style.transition = 'background 0.5s';
-            titleField.style.background = '#e8f5e9';
-            setTimeout(() => {
-                titleField.style.background = '';
-            }, 2000);
-        }
-
-        // Force sync all rich editors
-        ['f_job_description_editor', 'f_responsibilities_editor', 'f_qualifications_editor', 'f_skills_editor', 'f_application_procedure_editor']
-            .forEach(id => {
-                if (typeof richEditorSync === 'function') {
-                    richEditorSync(id);
-                }
-            });
-
-        toast('✅ Data applied to form successfully!', 'success');
-    }
-
-    // ================================================================
-    // APPLY EXTRACTED DATA
-    // ================================================================
-    function applyExtractedData() {
-        if (!extractedData) {
-            toast('No extracted data. Please extract first.', 'warning');
-            return;
-        }
-
-        const d = extractedData;
-
-        // Plain text fields
-        const fieldMap = {
-            job_title: 'f_job_title',
-            duty_station: 'f_duty_station',
-            application_procedure: 'f_application_procedure',
-            email: 'f_email',
-            telephone: 'f_telephone',
-            salary_amount: 'f_salary_amount',
-            currency: 'f_currency',
-            meta_description: 'f_meta_description',
-            keywords: 'f_keywords',
-            work_hours: 'f_work_hours',
-        };
-        Object.entries(fieldMap).forEach(([key, id]) => {
-            if (d[key] !== undefined && d[key] !== null) {
                 const el = document.getElementById(id);
                 if (el) el.value = d[key];
             }
         });
-
-        // Deadline
+    
+        // ---- Deadline ----
         if (d.deadline) {
             const el = document.getElementById('f_deadline');
-            if (el) el.value = d.deadline;
-        }
-
-        // Select elements
-        if (d.employment_type) { 
-            const el = document.getElementById('f_employment_type'); 
-            if (el && d.employment_type) {
-                const options = Array.from(el.options);
-                const match = options.find(opt => opt.value.toLowerCase() === d.employment_type.toLowerCase());
-                if (match) el.value = match.value;
+            if (el) {
+                el.value = /^\d{4}-\d{2}-\d{2}$/.test(d.deadline)
+                    ? d.deadline
+                    : (() => { const dt = new Date(d.deadline); return isNaN(dt) ? d.deadline : dt.toISOString().split('T')[0]; })();
             }
         }
-        if (d.location_type) { 
-            const el = document.getElementById('f_location_type'); 
-            if (el && d.location_type) {
-                const options = Array.from(el.options);
-                const match = options.find(opt => opt.value.toLowerCase() === d.location_type.toLowerCase());
+    
+        // ---- Native <select> dropdowns ----
+        [['f_employment_type', d.employment_type], ['f_location_type', d.location_type], ['f_payment_period', d.payment_period]]
+            .forEach(([id, value]) => {
+                if (!value) return;
+                const el = document.getElementById(id);
+                if (!el) return;
+                const match = Array.from(el.options).find(opt => opt.value.toLowerCase() === String(value).toLowerCase());
                 if (match) el.value = match.value;
-            }
-        }
-        if (d.payment_period) { 
-            const el = document.getElementById('f_payment_period'); 
-            if (el && d.payment_period) {
-                const options = Array.from(el.options);
-                const match = options.find(opt => opt.value.toLowerCase() === d.payment_period.toLowerCase());
-                if (match) el.value = match.value;
-            }
-        }
-
-        // Rich text editors - preserve exact content
+            });
+    
+        // ---- Rich text editors (Arial styling already applied server-side - don't re-wrap here) ----
         const richMap = {
             job_description: 'f_job_description_editor',
             responsibilities: 'f_responsibilities_editor',
@@ -508,44 +302,31 @@
         };
         Object.entries(richMap).forEach(([key, editorId]) => {
             if (d[key] && typeof richEditorSet === 'function') {
-                let content = d[key];
-                if (content && !content.includes('font-family')) {
-                    content = `<div style="font-family: Arial, sans-serif;">${content}</div>`;
-                }
-                richEditorSet(editorId, content);
+                richEditorSet(editorId, d[key]);
             }
         });
-
-        // Auto-select country if available
+    
+        // ---- Country: f_country_code is a hidden input, not a <select> - no .options here.
+        // Don't force-navigate to a different country (that would reload the page and lose
+        // everything just filled in) - just tell the user if the AI thinks it's a different one.
         if (d.country_code) {
-            const countrySelect = document.getElementById('f_country_code');
-            if (countrySelect) {
-                const options = Array.from(countrySelect.options);
-                const match = options.find(opt => opt.value === d.country_code);
-                if (match) {
-                    countrySelect.value = d.country_code;
-                    countrySelect.dispatchEvent(new Event('change', { bubbles: true }));
-                }
+            const currentCountry = document.getElementById('f_country_code')?.value;
+            if (currentCountry && d.country_code !== currentCountry) {
+                toast(`Note: this content looks like it's for ${d.country_code}, but you're posting under ${currentCountry}. Switch country above if that's wrong.`, 'info');
             }
         }
-
-        // Auto-select dropdowns (only if exact match found) - check if function exists
+    
+        // ---- Searchable dropdowns (company, category, industry, location, job type, etc.) ----
         if (typeof autoSelectDropdowns === 'function') {
             autoSelectDropdowns(d);
         }
-
-        // Checkboxes
+    
+        // ---- Checkboxes ----
         const checkMap = {
-            is_urgent: 'f_urgent',
-            is_featured: 'f_featured',
-            is_verified: 'f_verified',
-            is_quick_gig: 'f_quickgig',
-            is_resume_required: 'f_resume',
-            is_cover_letter_required: 'f_cover',
-            is_academic_documents_required: 'f_academic',
-            is_application_required: 'f_appletter',
-            is_whatsapp_contact: 'f_whatsapp',
-            is_telephone_call: 'f_telcall',
+            is_urgent: 'f_urgent', is_featured: 'f_featured', is_verified: 'f_verified',
+            is_quick_gig: 'f_quickgig', is_resume_required: 'f_resume', is_cover_letter_required: 'f_cover',
+            is_academic_documents_required: 'f_academic', is_application_required: 'f_appletter',
+            is_whatsapp_contact: 'f_whatsapp', is_telephone_call: 'f_telcall',
         };
         Object.entries(checkMap).forEach(([key, id]) => {
             if (d[key] !== undefined) {
@@ -553,9 +334,19 @@
                 if (el) el.checked = !!d[key];
             }
         });
-
+    
+        // ---- Draw attention to the top of the form ----
+        const titleField = document.getElementById('f_job_title');
+        if (titleField) {
+            titleField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            titleField.style.transition = 'background 0.5s';
+            titleField.style.background = '#e8f5e9';
+            setTimeout(() => { titleField.style.background = ''; }, 2000);
+        }
+    
         toast('✅ Data applied to form successfully!', 'success');
     }
+
 
     // ================================================================
     // AUTO-SELECT DROPDOWNS - FIXED
@@ -657,7 +448,7 @@
             const badge = aiDefaulted.has(f.key)
                 ? `<span class="badge badge-light-warning ms-1" style="font-size:10px">default</span>`
                 : '';
-            
+                                            
             // For country code, show country name
             let displayVal = val;
             if (f.key === 'country_code' && val) {

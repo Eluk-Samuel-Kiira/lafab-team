@@ -16,9 +16,6 @@ class AiJobController extends Controller
         $this->aiService = $aiService;
     }
 
-    /**
-     * Get available AI models
-     */
     public function getModels()
     {
         return response()->json([
@@ -28,9 +25,6 @@ class AiJobController extends Controller
         ]);
     }
 
-    /**
-     * Extract job data from text or URL
-     */
     public function extractJobData(Request $request)
     {
         $request->validate([
@@ -40,12 +34,14 @@ class AiJobController extends Controller
             'country' => 'nullable|string|size:2',
         ]);
 
+        $model = $request->model ?? config('ai.default');
+
         try {
-            $model = $request->model ?? config('ai.default');
             $result = $this->aiService->extractJobData(
                 $request->content,
                 $request->source_type,
-                $model
+                $model,
+                $request->country
             );
 
             return response()->json([
@@ -53,29 +49,19 @@ class AiJobController extends Controller
                 'data' => $result,
             ]);
         } catch (\Exception $e) {
-            // Get a clean error message
-            $errorMessage = $e->getMessage();
-            
-            // Clean up the error message
-            $errorMessage = preg_replace('/\[[^\]]+\]\s*/', '', $errorMessage);
+            $errorMessage = preg_replace('/\[[^\]]+\]\s*/', '', $e->getMessage());
             $errorMessage = preg_replace('/All AI models failed:\s*/', '', $errorMessage);
             $errorMessage = trim($errorMessage);
-            
-            Log::error('AI extraction failed', [
-                'model' => $model ?? 'unknown',
-                'error' => $e->getMessage(),
-            ]);
-            
+
+            Log::error('AI extraction failed', ['model' => $model, 'error' => $e->getMessage()]);
+
             return response()->json([
                 'success' => false,
                 'error' => $errorMessage ?: 'AI extraction failed. Please check your API keys and try again.',
-            ], 500);
+            ], 422);
         }
     }
 
-    /**
-     * Extract job data from image
-     */
     public function extractFromImage(Request $request)
     {
         $request->validate([
@@ -84,32 +70,29 @@ class AiJobController extends Controller
             'country' => 'nullable|string|size:2',
         ]);
 
+        $model = $request->model ?? config('ai.default');
+
         try {
-            $model = $request->model ?? config('ai.default');
-            $result = $this->aiService->extractFromImage(
-                $request->image_base64,
-                $model
-            );
+            $result = $this->aiService->extractFromImage($request->image_base64, $model, $request->country);
 
             return response()->json([
                 'success' => true,
                 'data' => $result,
             ]);
         } catch (\Exception $e) {
-            Log::error('Image extraction failed', [
-                'model' => $model ?? 'unknown',
-                'error' => $e->getMessage(),
-            ]);
+            $errorMessage = preg_replace('/\[[^\]]+\]\s*/', '', $e->getMessage());
+            $errorMessage = preg_replace('/All AI models failed:\s*/', '', $errorMessage);
+            $errorMessage = trim($errorMessage);
+
+            Log::error('Image extraction failed', ['model' => $model, 'error' => $e->getMessage()]);
+
             return response()->json([
                 'success' => false,
-                'error' => $e->getMessage(),
-            ], 500);
+                'error' => $errorMessage ?: 'Image extraction failed. Please check your API keys and try again.',
+            ], 422);
         }
     }
 
-    /**
-     * Enhance a field
-     */
     public function enhanceField(Request $request)
     {
         $request->validate([
@@ -119,8 +102,9 @@ class AiJobController extends Controller
             'instruction' => 'required|string',
         ]);
 
+        $model = $request->model ?? config('ai.default');
+
         try {
-            $model = $request->model ?? config('ai.default');
             $enhanced = $this->aiService->enhanceField(
                 $request->field_name,
                 $request->content,
@@ -134,20 +118,17 @@ class AiJobController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('AI enhance field failed', [
-                'model' => $model ?? 'unknown',
+                'model' => $model,
                 'field_name' => $request->field_name,
                 'error' => $e->getMessage(),
             ]);
             return response()->json([
                 'success' => false,
                 'error' => $e->getMessage(),
-            ], 500);
+            ], 422);
         }
     }
 
-    /**
-     * Generate full job post from title
-     */
     public function generateFromTitle(Request $request)
     {
         $request->validate([
@@ -157,8 +138,9 @@ class AiJobController extends Controller
             'country' => 'nullable|string|size:2',
         ]);
 
+        $model = $request->model ?? config('ai.default');
+
         try {
-            $model = $request->model ?? config('ai.default');
             $result = $this->aiService->generateFromTitle(
                 $request->title,
                 $request->company,
@@ -172,14 +154,14 @@ class AiJobController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('AI generate from title failed', [
-                'model' => $model ?? 'unknown',
+                'model' => $model,
                 'title' => $request->title,
                 'error' => $e->getMessage(),
             ]);
             return response()->json([
                 'success' => false,
                 'error' => $e->getMessage(),
-            ], 500);
+            ], 422);
         }
     }
 }

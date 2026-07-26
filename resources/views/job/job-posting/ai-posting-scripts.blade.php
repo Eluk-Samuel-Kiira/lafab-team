@@ -796,9 +796,14 @@ async function apiFetch(url, options = {}) {
         },
     });
     const data = await res.json();
-    if (!res.ok) throw data;
+    if (!res.ok) {
+        const err = new Error(data.error || data.message || `Request failed (HTTP ${res.status})`);
+        Object.assign(err, data); // keep .error, .errors, etc. available too
+        throw err;
+    }
     return data;
 }
+
 
 async function aiEnhanceField(fieldName, instruction) {
     const editorMap = {
