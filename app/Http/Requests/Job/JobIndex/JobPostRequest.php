@@ -35,7 +35,7 @@ class JobPostRequest extends FormRequest
             // Core Job Information
             // ----------------------------------------------------------------
             'job_title'             => "{$required}|string|max:255",
-            'slug'                  => "{$required}|string|max:255|unique:job_posts,slug," . ($this->route('id') ?? 'NULL'),
+            'slug'                  => "nullable|string|max:255|unique:job_posts,slug," . ($this->route('id') ?? 'NULL'),
             'job_description'       => "{$required}|string",
             'responsibilities'      => 'nullable|string',
             'skills'                => 'nullable|string',

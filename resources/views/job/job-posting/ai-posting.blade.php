@@ -327,79 +327,82 @@
     .rich-editor-body h5 { font-size: 0.83em; font-weight: 600; margin: 1.5em 0; }
     .rich-editor-body h6 { font-size: 0.67em; font-weight: 600; margin: 1.67em 0; }
     .rich-editor-statusbar { font-size: 11px; font-family: monospace; color: #9ca3af; background: #f9fafb; border-top: 1px solid #e5e7eb; min-height: 24px; }
+    
 </style>
 
-<div class="row g-5">
-    {{-- LEFT COLUMN - Main Form --}}
-    <div class="col-xl-8">
+{{-- AI Status Banner --}}
+<div id="aiBanner" class="alert ai-banner d-none align-items-center gap-3 mb-5" role="alert">
+    <div class="spinner-border spinner-border-sm text-white flex-shrink-0" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+    <span id="aiBannerText">AI is processing your content...</span>
+    <button type="button" class="btn-close btn-close-white ms-auto" onclick="hideBanner()"></button>
+</div>
 
-        {{-- AI Status Banner --}}
-        <div id="aiBanner" class="alert ai-banner d-none align-items-center gap-3 mb-5" role="alert">
-            <div class="spinner-border spinner-border-sm text-white flex-shrink-0" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-            <span id="aiBannerText">AI is processing your content...</span>
-            <button type="button" class="btn-close btn-close-white ms-auto" onclick="hideBanner()"></button>
-        </div>
 
-        {{-- Country Selector - Compact --}}
-        <div class="card card-flush shadow-sm mb-5">
-            <div class="card-header border-0 pt-5">
-                <div class="d-flex align-items-center gap-3">
-                    <h6 class="card-title fw-bold">
-                        <i class="ki-duotone ki-geolocation fs-2 me-2 text-primary"></i>
-                        Select Country
-                    </h6>
-                    <span class="badge badge-light-primary fs-6 fw-bold px-4 py-2" id="selectedCountryDisplay">
-                        {{ $countryName ?? 'Select Country' }}
-                    </span>
+
+{{-- Job Post Form --}}
+<form id="aiJobForm">
+    @csrf
+    <input type="hidden" name="poster_id" value="{{ auth()->id() }}">
+    <input type="hidden" name="is_simple_job" value="0">
+    <input type="hidden" name="country_code" id="f_country_code" value="{{ $selectedCountry ?? 'AU' }}">
+
+    {{-- MAIN ROW: 8-4 LAYOUT --}}
+    <div class="row g-5">
+        
+        {{-- LEFT COLUMN (8) --}}
+        <div class="col-xl-8">
+            {{-- Country Selector - Compact --}}
+            <div class="card card-flush shadow-sm mb-5">
+                <div class="card-header border-0 pt-5">
+                    <div class="d-flex align-items-center gap-3">
+                        <h6 class="card-title fw-bold">
+                            <i class="ki-duotone ki-geolocation fs-2 me-2 text-primary"></i>
+                            Select Country
+                        </h6>
+                        <span class="badge badge-light-primary fs-6 fw-bold px-4 py-2" id="selectedCountryDisplay">
+                            {{ $countryName ?? 'Select Country' }}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body pt-0">
+                    <div class="row g-2" data-kt-buttons="true" data-kt-buttons-target="[data-kt-button='true']">
+                        @php
+                            $countries = [
+                                'AU' => ['name' => 'Australia', 'flag' => '🇦🇺'],
+                                'UG' => ['name' => 'Uganda', 'flag' => '🇺🇬'],
+                                'KE' => ['name' => 'Kenya', 'flag' => '🇰🇪'],
+                                'TZ' => ['name' => 'Tanzania', 'flag' => '🇹🇿'],
+                                'RW' => ['name' => 'Rwanda', 'flag' => '🇷🇼'],
+                                'MW' => ['name' => 'Malawi', 'flag' => '🇲🇼'],
+                                'ZM' => ['name' => 'Zambia', 'flag' => '🇿🇲'],
+                                'SG' => ['name' => 'Singapore', 'flag' => '🇸🇬'],
+                            ];
+                        @endphp
+                        @foreach($countries as $code => $info)
+                            <div class="col-6 col-md-3">
+                                <a href="{{ route('admin.ai.job-posting', $code) }}" 
+                                class="btn btn-outline btn-outline-dashed btn-active-light-primary d-flex text-start p-3 w-100 {{ $selectedCountry === $code ? 'active' : '' }}"
+                                data-kt-button="true"
+                                style="border-width:2px;text-decoration:none;">
+                                    <span class="form-check form-check-custom form-check-solid form-check-sm align-items-start mt-1">
+                                        <input class="form-check-input" type="radio" name="country" value="{{ $code }}" {{ $selectedCountry === $code ? 'checked' : '' }} />
+                                    </span>
+                                    <span class="ms-2 d-flex align-items-center gap-2">
+                                        <span class="fs-2">{{ $info['flag'] }}</span>
+                                        <span class="fs-7 fw-bold text-gray-800">{{ $info['name'] }}</span>
+                                        @if($selectedCountry === $code)
+                                            <i class="ki-duotone ki-check-circle fs-5 text-primary ms-auto"></i>
+                                        @endif
+                                    </span>
+                                </a>
+                            </div>
+                        @endforeach
+                    </div>
                 </div>
             </div>
-            <div class="card-body pt-0">
-                <div class="row g-2" data-kt-buttons="true" data-kt-buttons-target="[data-kt-button='true']">
-                    @php
-                        $countries = [
-                            'AU' => ['name' => 'Australia', 'flag' => '🇦🇺'],
-                            'UG' => ['name' => 'Uganda', 'flag' => '🇺🇬'],
-                            'KE' => ['name' => 'Kenya', 'flag' => '🇰🇪'],
-                            'TZ' => ['name' => 'Tanzania', 'flag' => '🇹🇿'],
-                            'RW' => ['name' => 'Rwanda', 'flag' => '🇷🇼'],
-                            'MW' => ['name' => 'Malawi', 'flag' => '🇲🇼'],
-                            'ZM' => ['name' => 'Zambia', 'flag' => '🇿🇲'],
-                            'SG' => ['name' => 'Singapore', 'flag' => '🇸🇬'],
-                        ];
-                    @endphp
-                    @foreach($countries as $code => $info)
-                        <div class="col-6 col-md-3">
-                            <a href="{{ route('admin.ai.job-posting', $code) }}" 
-                            class="btn btn-outline btn-outline-dashed btn-active-light-primary d-flex text-start p-3 w-100 {{ $selectedCountry === $code ? 'active' : '' }}"
-                            data-kt-button="true"
-                            style="border-width:2px;text-decoration:none;">
-                                <span class="form-check form-check-custom form-check-solid form-check-sm align-items-start mt-1">
-                                    <input class="form-check-input" type="radio" name="country" value="{{ $code }}" {{ $selectedCountry === $code ? 'checked' : '' }} />
-                                </span>
-                                <span class="ms-2 d-flex align-items-center gap-2">
-                                    <span class="fs-2">{{ $info['flag'] }}</span>
-                                    <span class="fs-7 fw-bold text-gray-800">{{ $info['name'] }}</span>
-                                    @if($selectedCountry === $code)
-                                        <i class="ki-duotone ki-check-circle fs-5 text-primary ms-auto"></i>
-                                    @endif
-                                </span>
-                            </a>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-        </div>
-
-
-        {{-- Job Post Form --}}
-        <form id="aiJobForm">
-            @csrf
-            <input type="hidden" name="poster_id" value="{{ auth()->id() }}">
-            <input type="hidden" name="is_simple_job" value="0">
-            <input type="hidden" name="country_code" id="f_country_code" value="{{ $selectedCountry ?? 'AU' }}">
-
+                        
             {{-- Basic Information --}}
             <div class="card card-flush shadow-sm mb-5">
                 <div class="card-header border-0 pt-5">
@@ -598,332 +601,336 @@
                     <small class="text-muted mt-1 d-block">Include a URL where candidates should apply.</small>
                 </div>
             </div>
-        </form>
-    </div>
+        </div>
+        {{-- END LEFT COLUMN (8) --}}
 
-    {{-- RIGHT COLUMN - Sidebar --}}
-    <div class="col-xl-4">
+        {{-- RIGHT COLUMN (4) --}}
+        <div class="col-xl-4">
 
-        {{-- AI Assistant Card - Gradient Version --}}
-        <div class="card card-flush shadow-sm mb-5 bg-primary" style="background:linear-gradient(135deg,#7239ea 0%,#009ef7 100%);border:none;">
-            <div class="card-body p-5">
-                <div class="d-flex align-items-center mb-4">
-                    <div class="symbol symbol-50px symbol-circle me-3">
-                        <span class="symbol-label bg-white bg-opacity-15">
-                            <i class="ki-duotone ki-robot fs-2x text-white"></i>
+            {{-- AI Assistant Card --}}
+            <div class="card card-flush shadow-sm mb-5 bg-primary" style="background:linear-gradient(135deg,#7239ea 0%,#009ef7 100%);border:none;">
+                <div class="card-body p-5">
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="symbol symbol-50px symbol-circle me-3">
+                            <span class="symbol-label bg-white bg-opacity-15">
+                                <i class="ki-duotone ki-robot fs-2x text-white"></i>
+                            </span>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h5 class="text-white fw-bold mb-0">AI Assistant</h5>
+                            <span class="text-white text-opacity-75 fs-7">Powered by advanced AI</span>
+                        </div>
+                        <span class="badge badge-light-white fw-bold px-4 py-2 rounded-pill">
+                            <span class="bullet bullet-dot bullet-success me-1"></span>
+                            Active
                         </span>
                     </div>
-                    <div class="flex-grow-1">
-                        <h5 class="text-white fw-bold mb-0">AI Assistant</h5>
-                        <span class="text-white text-opacity-75 fs-7">Powered by advanced AI</span>
-                    </div>
-                    <span class="badge badge-light-white fw-bold px-4 py-2 rounded-pill">
-                        <span class="bullet bullet-dot bullet-success me-1"></span>
-                        Active
-                    </span>
-                </div>
-                
-                <p class="text-white text-opacity-75 fs-7 mb-4">
-                    Extract job data from any source using advanced AI models.
-                </p>
-                
-                <div class="d-grid gap-2">
-                    <button type="button" class="btn btn-light btn-active-light fw-bold py-3" onclick="openAiExtractModal()">
-                        <i class="ki-duotone ki-clipboard-text fs-3 me-2"></i>
-                        Paste & Extract
-                        <i class="ki-duotone ki-arrow-right fs-3 ms-auto"></i>
-                    </button>
                     
+                    <p class="text-white text-opacity-75 fs-7 mb-4">
+                        Extract job data from any source using advanced AI models.
+                    </p>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-light btn-active-light fw-bold py-3" onclick="openAiExtractModal()">
+                            <i class="ki-duotone ki-clipboard-text fs-3 me-2"></i>
+                            Paste & Extract
+                            <i class="ki-duotone ki-arrow-right fs-3 ms-auto"></i>
+                        </button>
+                        
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <button type="button" class="btn btn-outline-light btn-active-light w-100 py-3" onclick="openImageExtractModal()">
+                                    <i class="ki-duotone ki-picture fs-3 me-2"></i>
+                                    Image
+                                </button>
+                            </div>
+                            <div class="col-6">
+                                <button type="button" class="btn btn-outline-light btn-active-light w-100 py-3" onclick="aiGenerateFromUrl()">
+                                    <i class="ki-duotone ki-link fs-3 me-2"></i>
+                                    URL
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="separator separator-white separator-opacity-25 my-4"></div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-white text-opacity-50 fs-8">
+                            <i class="ki-duotone ki-shield-tick fs-7 me-1"></i> Secure
+                        </span>
+                        <span class="text-white text-opacity-50 fs-8">
+                            <i class="ki-duotone ki-clock fs-7 me-1"></i> Quick
+                        </span>
+                        <span class="text-white text-opacity-50 fs-8">
+                            <i class="ki-duotone ki-check-circle fs-7 me-1"></i> 96% Accuracy
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Salary Information --}}
+            <div class="card card-flush shadow-sm mb-5">
+                <div class="card-header border-0 pt-5">
+                    <h6 class="card-title fw-bold">
+                        <i class="ki-duotone ki-coin fs-2 me-2 text-success"></i>
+                        Salary Information
+                    </h6>
+                </div>
+                <div class="card-body pt-0">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Salary Range</label>
+                            <div class="searchable-select">
+                                <input type="text" class="form-control form-control-solid searchable-select-input"
+                                    id="f_salaryrange_search" placeholder="Select salary range..." autocomplete="off">
+                                <input type="hidden" name="salary_range_id" id="f_salaryrange_id" value="">
+                                <div class="searchable-select-dropdown" id="f_salaryrange_dropdown"></div>
+                            </div>
+                        </div>
+                        <div class="col-7">
+                            <label class="form-label fw-semibold">Amount</label>
+                            <input type="number" name="salary_amount" id="f_salary_amount" 
+                                   class="form-control" placeholder="0">
+                        </div>
+                        <div class="col-5">
+                            <label class="form-label fw-semibold">Currency</label>
+                            <input type="text" name="currency" id="f_currency" 
+                                   class="form-control" value="AUD">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Payment Period</label>
+                            <select name="payment_period" id="f_payment_period" class="form-select">
+                                <option value="">— Select —</option>
+                                <option value="monthly" selected>Monthly</option>
+                                <option value="yearly">Yearly</option>
+                                <option value="weekly">Weekly</option>
+                                <option value="daily">Daily</option>
+                                <option value="hourly">Hourly</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Experience & Education --}}
+            <div class="card card-flush shadow-sm mb-5">
+                <div class="card-header border-0 pt-5">
+                    <h6 class="card-title fw-bold">
+                        <i class="ki-duotone ki-school fs-2 me-2 text-info"></i>
+                        Requirements
+                    </h6>
+                </div>
+                <div class="card-body pt-0">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold required">Experience Level</label>
+                            <div class="searchable-select">
+                                <input type="text" class="form-control form-control-solid searchable-select-input"
+                                    id="f_experience_search" placeholder="Type to search..." autocomplete="off">
+                                <input type="hidden" name="experience_level_id" id="f_experience_id" value="">
+                                <div class="searchable-select-dropdown" id="f_experience_dropdown"></div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold required">Education Level</label>
+                            <div class="searchable-select">
+                                <input type="text" class="form-control form-control-solid searchable-select-input"
+                                    id="f_education_search" placeholder="Type to search..." autocomplete="off">
+                                <input type="hidden" name="education_level_id" id="f_education_id" value="">
+                                <div class="searchable-select-dropdown" id="f_education_dropdown"></div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Work Hours</label>
+                            <input type="text" name="work_hours" id="f_work_hours" 
+                                   class="form-control" placeholder="e.g., 8am–5pm Mon–Fri">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Contact Information --}}
+            <div class="card card-flush shadow-sm mb-5">
+                <div class="card-header border-0 pt-5">
+                    <h6 class="card-title fw-bold">
+                        <i class="ki-duotone ki-phone fs-2 me-2 text-primary"></i>
+                        Contact Information
+                    </h6>
+                </div>
+                <div class="card-body pt-0">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Contact Email</label>
+                            <input type="email" name="email" id="f_email" 
+                                   class="form-control" placeholder="hr@company.com">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Telephone</label>
+                            <input type="text" name="telephone" id="f_telephone" 
+                                   class="form-control" placeholder="+256 700 000 000">
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex flex-column gap-2">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="is_whatsapp_contact" id="f_whatsapp">
+                                    <label class="form-check-label" for="f_whatsapp">WhatsApp contact</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="is_telephone_call" id="f_telcall">
+                                    <label class="form-check-label" for="f_telcall">Phone call OK</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Flags & Requirements --}}
+            <div class="card card-flush shadow-sm mb-5">
+                <div class="card-header border-0 pt-5">
+                    <h6 class="card-title fw-bold">
+                        <i class="ki-duotone ki-flag fs-2 me-2 text-warning"></i>
+                        Flags & Requirements
+                    </h6>
+                </div>
+                <div class="card-body pt-0">
                     <div class="row g-2">
                         <div class="col-6">
-                            <button type="button" class="btn btn-outline-light btn-active-light w-100 py-3" onclick="openImageExtractModal()">
-                                <i class="ki-duotone ki-picture fs-3 me-2"></i>
-                                Image
-                            </button>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="is_featured" id="f_featured">
+                                <label class="form-check-label" for="f_featured">Featured</label>
+                            </div>
                         </div>
                         <div class="col-6">
-                            <button type="button" class="btn btn-outline-light btn-active-light w-100 py-3" onclick="aiGenerateFromUrl()">
-                                <i class="ki-duotone ki-link fs-3 me-2"></i>
-                                URL
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="separator separator-white separator-opacity-25 my-4"></div>
-                <div class="d-flex justify-content-between align-items-center">
-                    <span class="text-white text-opacity-50 fs-8">
-                        <i class="ki-duotone ki-shield-tick fs-7 me-1"></i> Secure
-                    </span>
-                    <span class="text-white text-opacity-50 fs-8">
-                        <i class="ki-duotone ki-clock fs-7 me-1"></i> Quick
-                    </span>
-                    <span class="text-white text-opacity-50 fs-8">
-                        <i class="ki-duotone ki-check-circle fs-7 me-1"></i> 96% Accuracy
-                    </span>
-                </div>
-            </div>
-        </div>
-
-        {{-- Salary Information --}}
-        <div class="card card-flush shadow-sm mb-5">
-            <div class="card-header border-0 pt-5">
-                <h6 class="card-title fw-bold">
-                    <i class="ki-duotone ki-coin fs-2 me-2 text-success"></i>
-                    Salary Information
-                </h6>
-            </div>
-            <div class="card-body pt-0">
-                <div class="row g-3">
-                    <div class="col-12">
-                        <label class="form-label fw-semibold">Salary Range</label>
-                        <div class="searchable-select">
-                            <input type="text" class="form-control form-control-solid searchable-select-input"
-                                id="f_salaryrange_search" placeholder="Select salary range..." autocomplete="off">
-                            <input type="hidden" name="salary_range_id" id="f_salaryrange_id" value="">
-                            <div class="searchable-select-dropdown" id="f_salaryrange_dropdown"></div>
-                        </div>
-                    </div>
-                    <div class="col-7">
-                        <label class="form-label fw-semibold">Amount</label>
-                        <input type="number" name="salary_amount" id="f_salary_amount" 
-                               class="form-control" placeholder="0">
-                    </div>
-                    <div class="col-5">
-                        <label class="form-label fw-semibold">Currency</label>
-                        <input type="text" name="currency" id="f_currency" 
-                               class="form-control" value="AUD">
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label fw-semibold">Payment Period</label>
-                        <select name="payment_period" id="f_payment_period" class="form-select">
-                            <option value="">— Select —</option>
-                            <option value="monthly" selected>Monthly</option>
-                            <option value="yearly">Yearly</option>
-                            <option value="weekly">Weekly</option>
-                            <option value="daily">Daily</option>
-                            <option value="hourly">Hourly</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {{-- Experience & Education --}}
-        <div class="card card-flush shadow-sm mb-5">
-            <div class="card-header border-0 pt-5">
-                <h6 class="card-title fw-bold">
-                    <i class="ki-duotone ki-school fs-2 me-2 text-info"></i>
-                    Requirements
-                </h6>
-            </div>
-            <div class="card-body pt-0">
-                <div class="row g-3">
-                    <div class="col-12">
-                        <label class="form-label fw-semibold required">Experience Level</label>
-                        <div class="searchable-select">
-                            <input type="text" class="form-control form-control-solid searchable-select-input"
-                                id="f_experience_search" placeholder="Type to search..." autocomplete="off">
-                            <input type="hidden" name="experience_level_id" id="f_experience_id" value="">
-                            <div class="searchable-select-dropdown" id="f_experience_dropdown"></div>
-                        </div>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label fw-semibold required">Education Level</label>
-                        <div class="searchable-select">
-                            <input type="text" class="form-control form-control-solid searchable-select-input"
-                                id="f_education_search" placeholder="Type to search..." autocomplete="off">
-                            <input type="hidden" name="education_level_id" id="f_education_id" value="">
-                            <div class="searchable-select-dropdown" id="f_education_dropdown"></div>
-                        </div>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label fw-semibold">Work Hours</label>
-                        <input type="text" name="work_hours" id="f_work_hours" 
-                               class="form-control" placeholder="e.g., 8am–5pm Mon–Fri">
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {{-- Contact Information --}}
-        <div class="card card-flush shadow-sm mb-5">
-            <div class="card-header border-0 pt-5">
-                <h6 class="card-title fw-bold">
-                    <i class="ki-duotone ki-phone fs-2 me-2 text-primary"></i>
-                    Contact Information
-                </h6>
-            </div>
-            <div class="card-body pt-0">
-                <div class="row g-3">
-                    <div class="col-12">
-                        <label class="form-label fw-semibold">Contact Email</label>
-                        <input type="email" name="email" id="f_email" 
-                               class="form-control" placeholder="hr@company.com">
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label fw-semibold">Telephone</label>
-                        <input type="text" name="telephone" id="f_telephone" 
-                               class="form-control" placeholder="+256 700 000 000">
-                    </div>
-                    <div class="col-12">
-                        <div class="d-flex flex-column gap-2">
                             <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" name="is_whatsapp_contact" id="f_whatsapp">
-                                <label class="form-check-label" for="f_whatsapp">WhatsApp contact</label>
+                                <input class="form-check-input" type="checkbox" name="is_urgent" id="f_urgent">
+                                <label class="form-check-label" for="f_urgent">Urgent</label>
                             </div>
+                        </div>
+                        <div class="col-6">
                             <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" name="is_telephone_call" id="f_telcall">
-                                <label class="form-check-label" for="f_telcall">Phone call OK</label>
+                                <input class="form-check-input" type="checkbox" name="is_quick_gig" id="f_quickgig">
+                                <label class="form-check-label" for="f_quickgig">Quick Gig</label>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="is_verified" id="f_verified">
+                                <label class="form-check-label" for="f_verified">Pre-verify</label>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="my-3">
+                    <div class="row g-2">
+                        <p class="small fw-semibold text-muted mb-2">Application Requirements</p>
+                        <div class="col-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="is_resume_required" id="f_resume" checked>
+                                <label class="form-check-label" for="f_resume">Resume/CV</label>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="is_cover_letter_required" id="f_cover">
+                                <label class="form-check-label" for="f_cover">Cover Letter</label>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="is_academic_documents_required" id="f_academic">
+                                <label class="form-check-label" for="f_academic">Academic Docs</label>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="is_application_required" id="f_appletter">
+                                <label class="form-check-label" for="f_appletter">App. Letter</label>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        {{-- Flags & Requirements --}}
-        <div class="card card-flush shadow-sm mb-5">
-            <div class="card-header border-0 pt-5">
-                <h6 class="card-title fw-bold">
-                    <i class="ki-duotone ki-flag fs-2 me-2 text-warning"></i>
-                    Flags & Requirements
-                </h6>
-            </div>
-            <div class="card-body pt-0">
-                <div class="row g-2">
-                    <div class="col-6">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" name="is_featured" id="f_featured">
-                            <label class="form-check-label" for="f_featured">Featured</label>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" name="is_urgent" id="f_urgent">
-                            <label class="form-check-label" for="f_urgent">Urgent</label>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" name="is_quick_gig" id="f_quickgig">
-                            <label class="form-check-label" for="f_quickgig">Quick Gig</label>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" name="is_verified" id="f_verified">
-                            <label class="form-check-label" for="f_verified">Pre-verify</label>
-                        </div>
+            {{-- SEO Metadata --}}
+            <div class="card card-flush shadow-sm mb-5">
+                <div class="card-header border-0 pt-5">
+                    <div class="d-flex align-items-center justify-content-between w-100">
+                        <h6 class="card-title fw-bold">
+                            <i class="ki-duotone ki-chart-simple fs-2 me-2 text-secondary"></i>
+                            SEO Metadata
+                        </h6>
+                        <button type="button" class="btn btn-sm btn-light" onclick="toggleSeo()">
+                            <i class="ki-duotone ki-chevron-down fs-3" id="seoChevron"></i>
+                        </button>
                     </div>
                 </div>
-                <hr class="my-3">
-                <div class="row g-2">
-                    <p class="small fw-semibold text-muted mb-2">Application Requirements</p>
-                    <div class="col-6">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" name="is_resume_required" id="f_resume" checked>
-                            <label class="form-check-label" for="f_resume">Resume/CV</label>
+                <div class="card-body pt-0" id="seoBody" style="display:none">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold">Meta Title <span class="text-muted">(50-60 chars)</span></label>
+                            <input type="text" name="meta_title" id="f_meta_title" 
+                                   class="form-control" placeholder="Auto-generated" maxlength="60">
+                            <div class="d-flex justify-content-end mt-1">
+                                <small id="metaTitleCount" class="text-muted">0/60</small>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" name="is_cover_letter_required" id="f_cover">
-                            <label class="form-check-label" for="f_cover">Cover Letter</label>
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold">Meta Description <span class="text-muted">(150-160 chars)</span></label>
+                            <textarea name="meta_description" id="f_meta_description" 
+                                      class="form-control" rows="2" placeholder="Auto-generated" maxlength="160"></textarea>
+                            <div class="d-flex justify-content-end mt-1">
+                                <small id="metaDescCount" class="text-muted">0/160</small>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" name="is_academic_documents_required" id="f_academic">
-                            <label class="form-check-label" for="f_academic">Academic Docs</label>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" name="is_application_required" id="f_appletter">
-                            <label class="form-check-label" for="f_appletter">App. Letter</label>
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold">Keywords</label>
+                            <input type="text" name="keywords" id="f_keywords" 
+                                   class="form-control" placeholder="Auto-generated keywords">
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        {{-- SEO Metadata --}}
-        <div class="card card-flush shadow-sm mb-5">
-            <div class="card-header border-0 pt-5">
-                <div class="d-flex align-items-center justify-content-between w-100">
-                    <h6 class="card-title fw-bold">
-                        <i class="ki-duotone ki-chart-simple fs-2 me-2 text-secondary"></i>
-                        SEO Metadata
+            {{-- Submit Buttons --}}
+            <div class="d-grid gap-2">
+                <button type="button" class="btn btn-primary btn-lg fw-semibold" onclick="submitJobPost('live')">
+                    <span id="submitJobBtnText"><i class="ki-duotone ki-send fs-3 me-2"></i>Post Job Now</span>
+                    <span id="submitJobBtnSpinner" class="spinner-border spinner-border-sm ms-2 d-none"></span>
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="submitJobPost('draft')">
+                    <span id="submitDraftBtnText"><i class="ki-duotone ki-save fs-3 me-2"></i>Save as Draft</span>
+                    <span id="submitDraftBtnSpinner" class="spinner-border spinner-border-sm ms-2 d-none"></span>
+                </button>
+                <button type="button" class="btn btn-outline-danger" onclick="clearForm()">
+                    <i class="ki-duotone ki-trash fs-3 me-2"></i>Clear Form
+                </button>
+            </div>
+
+            <div id="formErrors" class="mt-3"></div>
+
+            {{-- Posting Tips --}}
+            <div class="card card-flush shadow-sm mt-5" style="background: #f8f9fa;">
+                <div class="card-body p-4">
+                    <h6 class="fw-semibold small mb-2 d-flex align-items-center gap-2">
+                        <i class="ki-duotone ki-bulb text-warning fs-2"></i>
+                        Posting Tips
                     </h6>
-                    <button type="button" class="btn btn-sm btn-light" onclick="toggleSeo()">
-                        <i class="ki-duotone ki-chevron-down fs-3" id="seoChevron"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="card-body pt-0" id="seoBody" style="display:none">
-                <div class="row g-3">
-                    <div class="col-12">
-                        <label class="form-label small fw-semibold">Meta Title <span class="text-muted">(50-60 chars)</span></label>
-                        <input type="text" name="meta_title" id="f_meta_title" 
-                               class="form-control" placeholder="Auto-generated" maxlength="60">
-                        <div class="d-flex justify-content-end mt-1">
-                            <small id="metaTitleCount" class="text-muted">0/60</small>
-                        </div>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label small fw-semibold">Meta Description <span class="text-muted">(150-160 chars)</span></label>
-                        <textarea name="meta_description" id="f_meta_description" 
-                                  class="form-control" rows="2" placeholder="Auto-generated" maxlength="160"></textarea>
-                        <div class="d-flex justify-content-end mt-1">
-                            <small id="metaDescCount" class="text-muted">0/160</small>
-                        </div>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label small fw-semibold">Keywords</label>
-                        <input type="text" name="keywords" id="f_keywords" 
-                               class="form-control" placeholder="Auto-generated keywords">
-                    </div>
+                    <ul class="list-unstyled mb-0 small text-muted">
+                        <li class="mb-1"><i class="ki-duotone ki-check text-success fs-2 me-2"></i>Use specific job titles for better SEO</li>
+                        <li class="mb-1"><i class="ki-duotone ki-check text-success fs-2 me-2"></i>Include salary to get 3x more applicants</li>
+                        <li class="mb-1"><i class="ki-duotone ki-check text-success fs-2 me-2"></i>List 5-8 key responsibilities</li>
+                        <li class="mb-1"><i class="ki-duotone ki-check text-success fs-2 me-2"></i>Mention company culture and benefits</li>
+                        <li class="mb-1"><i class="ki-duotone ki-check text-success fs-2 me-2"></i>Set a clear application deadline</li>
+                        <li><i class="ki-duotone ki-check text-success fs-2 me-2"></i>Verify before posting for instant visibility</li>
+                    </ul>
                 </div>
             </div>
         </div>
+        {{-- END RIGHT COLUMN (4) --}}
 
-        {{-- Submit Buttons --}}
-        <div class="d-grid gap-2">
-            <button type="button" class="btn btn-primary btn-lg fw-semibold" onclick="submitJobPost('live')">
-                <span id="submitJobBtnText"><i class="ki-duotone ki-send fs-3 me-2"></i>Post Job Now</span>
-                <span id="submitJobBtnSpinner" class="spinner-border spinner-border-sm ms-2 d-none"></span>
-            </button>
-            <button type="button" class="btn btn-outline-secondary" onclick="submitJobPost('draft')">
-                <span id="submitDraftBtnText"><i class="ki-duotone ki-save fs-3 me-2"></i>Save as Draft</span>
-                <span id="submitDraftBtnSpinner" class="spinner-border spinner-border-sm ms-2 d-none"></span>
-            </button>
-            <button type="button" class="btn btn-outline-danger" onclick="clearForm()">
-                <i class="ki-duotone ki-trash fs-3 me-2"></i>Clear Form
-            </button>
-        </div>
-
-        <div id="formErrors" class="mt-3"></div>
-
-        {{-- Posting Tips --}}
-        <div class="card card-flush shadow-sm mt-5" style="background: #f8f9fa;">
-            <div class="card-body p-4">
-                <h6 class="fw-semibold small mb-2 d-flex align-items-center gap-2">
-                    <i class="ki-duotone ki-bulb text-warning fs-2"></i>
-                    Posting Tips
-                </h6>
-                <ul class="list-unstyled mb-0 small text-muted">
-                    <li class="mb-1"><i class="ki-duotone ki-check text-success fs-2 me-2"></i>Use specific job titles for better SEO</li>
-                    <li class="mb-1"><i class="ki-duotone ki-check text-success fs-2 me-2"></i>Include salary to get 3x more applicants</li>
-                    <li class="mb-1"><i class="ki-duotone ki-check text-success fs-2 me-2"></i>List 5-8 key responsibilities</li>
-                    <li class="mb-1"><i class="ki-duotone ki-check text-success fs-2 me-2"></i>Mention company culture and benefits</li>
-                    <li class="mb-1"><i class="ki-duotone ki-check text-success fs-2 me-2"></i>Set a clear application deadline</li>
-                    <li><i class="ki-duotone ki-check text-success fs-2 me-2"></i>Verify before posting for instant visibility</li>
-                </ul>
-            </div>
-        </div>
     </div>
-</div>
+    {{-- END MAIN ROW --}}
+</form>
 
 {{-- AI EXTRACT MODAL --}}
 @include('job.job-posting.ai-text-extract')
@@ -936,4 +943,5 @@
 @push('scripts')
 @include('job.job-posting.ai-posting-scripts')
 @include('job.job-posting.ai-extraction')
+@include('job.job-posting.ai-validator')
 @endpush

@@ -138,13 +138,13 @@
                 </select>
             </div>
         </div>
-        <div class="card-toolbar">
+        {{--<div class="card-toolbar">
             <button type="button" class="btn btn-primary" disabled>
                 <i class="ki-duotone ki-plus-square fs-2">
                     <span class="path1"></span><span class="path2"></span><span class="path3"></span>
                 </i> Add Job Post (Coming Soon)
             </button>
-        </div>
+        </div> --}}
     </div>
     
     <div class="card-body pt-0">
@@ -357,10 +357,23 @@ function setupEventListeners() {
 // LOAD POSTERS
 // ================================================================
 function loadPosters() {
-    fetch('/admin/job-posts/data?per_page=1')
+    fetch('/admin/job-posts/posters')
         .then(res => res.json())
         .then(data => {
-            // Extract unique poster IDs from the data
+            const posterFilter = document.getElementById('posterFilter');
+            if (!posterFilter) return;
+            
+            // Keep the default "All Posters" option
+            posterFilter.innerHTML = '<option value="">All Posters</option>';
+            
+            if (data.success && data.data) {
+                data.data.forEach(poster => {
+                    const option = document.createElement('option');
+                    option.value = poster.id;
+                    option.textContent = poster.name;
+                    posterFilter.appendChild(option);
+                });
+            }
         })
         .catch(err => console.error('Error loading posters:', err));
 }
@@ -383,7 +396,7 @@ function loadJobPosts() {
     if (currentSearch) url += `&search=${encodeURIComponent(currentSearch)}`;
     if (currentCountry) url += `&country=${encodeURIComponent(currentCountry)}`;
     if (currentStatus) url += `&status=${encodeURIComponent(currentStatus)}`;
-    if (currentPoster) url += `&poster=${encodeURIComponent(currentPoster)}`;
+    if (currentPoster) url += `&poster=${encodeURIComponent(currentPoster)}`; // Add this line
     
     fetch(url)
         .then(res => res.json())

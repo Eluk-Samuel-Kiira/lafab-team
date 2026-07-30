@@ -116,6 +116,13 @@
                             <span class="menu-arrow"></span>
                         </span>
                         <div class="menu-sub menu-sub-accordion">
+                            <!-- Job Posts -->
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->routeIs('admin.job-posts*') ? 'active' : '' }}" href="{{ route('admin.job-posts') }}">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">Job Posts</span>
+                                </a>
+                            </div>
                             <!-- Companies -->
                             <div class="menu-item">
                                 <a class="menu-link {{ request()->routeIs('admin.companies*') ? 'active' : '' }}" href="{{ route('admin.companies') }}">
@@ -128,13 +135,6 @@
                                 <a class="menu-link {{ request()->routeIs('admin.job-locations*') ? 'active' : '' }}" href="{{ route('admin.job-locations') }}">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                     <span class="menu-title">Locations</span>
-                                </a>
-                            </div>
-                            <!-- Job Posts -->
-                            <div class="menu-item">
-                                <a class="menu-link {{ request()->routeIs('admin.job-posts*') ? 'active' : '' }}" href="{{ route('admin.job-posts') }}">
-                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                    <span class="menu-title">Job Posts</span>
                                 </a>
                             </div>
                             <!-- Job Applications (Coming Soon) -->

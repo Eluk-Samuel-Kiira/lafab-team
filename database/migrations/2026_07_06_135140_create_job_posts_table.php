@@ -132,6 +132,7 @@ return new class extends Migration
             // Timestamps
             $table->timestamps();
             $table->timestamp('published_at')->nullable();            
+            $table->timestamp('published_until')->nullable();            
             $table->datetime('featured_until')->nullable();
             $table->datetime('last_pinged_at')->nullable();
             $table->datetime('last_indexed_at')->nullable();

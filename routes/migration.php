@@ -236,19 +236,29 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
 
 
 Route::prefix('admin')->middleware(['auth'])->group(function () {
-    // Job Posts
     Route::prefix('job-posts')->group(function () {
+        // ============================================
+        // STATIC ROUTES (NO PARAMETERS) - MUST BE FIRST
+        // ============================================
         Route::get('/', [App\Http\Controllers\Job\JobIndex\JobPostController::class, 'index'])
             ->name('admin.job-posts');
         Route::get('/data', [App\Http\Controllers\Job\JobIndex\JobPostController::class, 'getData'])
             ->name('admin.job-posts.data');
         Route::get('/form-data', [App\Http\Controllers\Job\JobIndex\JobPostController::class, 'getFormData'])
             ->name('admin.job-posts.form-data');
+        
+        // POSTERS - Static route, must be before /{id}
+        Route::get('/posters', [App\Http\Controllers\Job\JobIndex\JobPostController::class, 'getPosters'])
+            ->name('admin.job-posts.posters');
+        
+        // ============================================
+        // DYNAMIC ROUTES (WITH PARAMETERS) - MUST BE LAST
+        // ============================================
         Route::get('/{id}', [App\Http\Controllers\Job\JobIndex\JobPostController::class, 'show'])
             ->name('admin.job-posts.show');
-        Route::put('/{id}', [App\Http\Controllers\Job\JobIndex\JobPostController::class, 'update'])
+        Route::put('/{id}', [App\Http\Controllers\Job\JobPosting\JobPostController::class, 'update'])
             ->name('admin.job-posts.update');
-        Route::post('/{id}', [App\Http\Controllers\Job\JobIndex\JobPostController::class, 'update'])
+        Route::post('/{id}', [App\Http\Controllers\Job\JobPosting\JobPostController::class, 'update'])
             ->name('admin.job-posts.update-post');
         Route::delete('/{id}', [App\Http\Controllers\Job\JobIndex\JobPostController::class, 'destroy'])
             ->name('admin.job-posts.destroy');
@@ -295,4 +305,21 @@ Route::prefix('ai')->middleware(['auth'])->group(function () {
     Route::post('/extract-image', [AiJobController::class, 'extractFromImage'])->name('ai.extract-image');
     Route::post('/enhance-field', [AiJobController::class, 'enhanceField'])->name('ai.enhance-field');
     Route::post('/generate-from-title', [AiJobController::class, 'generateFromTitle'])->name('ai.generate-from-title');
+});
+
+
+// ============================================
+// AI JOB POSTING ROUTES
+// ============================================
+Route::prefix('admin')->middleware(['auth'])->group(function () {
+    
+    // AI Job Posting - Show job data for editing
+    Route::get('/ai/job-posts/{id}', [App\Http\Controllers\Job\JobPosting\JobPostController::class, 'show'])
+        ->name('admin.ai.job-posts.show');
+    
+    // AI Job Posting - Store new job posts
+    Route::post('/ai/job-posts/store', [App\Http\Controllers\Job\JobPosting\JobPostController::class, 'store'])
+        ->name('admin.ai.job-posts.store');
+
+    
 });

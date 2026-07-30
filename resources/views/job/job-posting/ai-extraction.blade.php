@@ -1,7 +1,7 @@
 <script>
 
     // ================================================================
-    // EXTRACT JOB DATA - FIXED
+    // EXTRACT JOB DATA - USE RAW ERRORS FROM CONTROLLER
     // ================================================================
     async function extractJobData() {
         const model = document.getElementById('selectedModel').value;
@@ -29,7 +29,6 @@
         const preview = document.getElementById('aiPreviewPanel');
         const status = document.getElementById('extractStatus');
 
-        // Disable button and show spinner
         if (btn) btn.disabled = true;
         if (spinner) spinner.classList.remove('d-none');
         if (btnText) btnText.innerHTML = '<i class="ki-duotone ki-loader fs-3 me-1"></i>Extracting...';
@@ -55,18 +54,20 @@
                     source_type: sourceType,
                     country: document.getElementById('f_country_code')?.value || null,
                 }),
-
             });
 
-            // Check for error response
             if (result.success === false) {
-                throw new Error(result.error || result.message || 'Extraction failed');
+                // Use structured errors from the controller
+                if (result.errors && typeof result.errors === 'object') {
+                    const error = new Error('Extraction failed');
+                    error.errors = result.errors; // Pass raw errors to catch block
+                    throw error;
+                } else {
+                    throw new Error(result.error || result.message || 'Extraction failed');
+                }
             }
 
             extractedData = result.data;
-            // console.log('Extracted data received:', extractedData);
-            
-            // Render preview
             renderExtractedPreview(result.data);
 
             const applyBtn = document.getElementById('applyExtractedBtn');
@@ -80,9 +81,7 @@
                 status.className = 'badge badge-success';
             }
 
-            // AUTO-APPLY TO FORM
             if (document.getElementById('autoApplyToggle')?.checked) {
-                // Delay slightly to ensure DOM is ready
                 setTimeout(() => {
                     applyExtractedData();
                     const modal = bsModal('aiExtractModal');
@@ -93,19 +92,76 @@
             }
 
         } catch (e) {
-            // Error handling...
-            let msg = e.message || 'Extraction failed';
-            if (e.error) msg = e.error;
-            msg = msg.replace(/\[[^\]]+\]\s*/g, '').replace(/All AI models failed:\s*/g, '');
-            msg = msg.replace(/API error \([^)]+\):\s*/g, '').trim();
+            // Get errors from the error object
+            let modelErrors = [];
             
-            if (!msg || msg === '' || msg === 'Extraction failed') {
-                msg = 'AI extraction failed. Please check your API keys and try again.';
+            if (e.errors && typeof e.errors === 'object') {
+                // Use the raw errors from the controller - no modification
+                Object.entries(e.errors).forEach(([model, error]) => {
+                    modelErrors.push({ model, error });
+                });
+            } else {
+                // Fallback: parse from message (should rarely happen)
+                const rawMsg = e.message || 'Extraction failed';
+                const parts = rawMsg.split('|');
+                if (parts.length > 1) {
+                    parts.forEach(part => {
+                        const trimmedPart = part.trim();
+                        const match = trimmedPart.match(/\[([^\]]+)\]\s*(.*)/);
+                        if (match) {
+                            modelErrors.push({ model: match[1], error: match[2] });
+                        }
+                    });
+                }
+                if (modelErrors.length === 0) {
+                    modelErrors.push({ model: 'AI Service', error: rawMsg });
+                }
             }
+
+            // Build the error display HTML
+            const getModelIcon = (model) => {
+                const lower = model.toLowerCase();
+                if (lower.includes('gemini')) return '🔴';
+                if (lower.includes('openai')) return '🟢';
+                if (lower.includes('claude')) return '🟣';
+                if (lower.includes('grok')) return '🟠';
+                if (lower.includes('cohere')) return '🟡';
+                if (lower.includes('mistral')) return '🔵';
+                return '⚠️';
+            };
             
-            if (msg.includes('API key') || msg.includes('api_key') || msg.includes('authentication') || msg.includes('auth')) {
-                msg = 'API key error: Please check your AI model API keys in the configuration.';
-            }
+            let errorItemsHtml = modelErrors.map((item, index) => {
+                const icon = getModelIcon(item.model);
+                const color = index % 2 === 0 ? 'bg-light' : '';
+                return `
+                    <div class="d-flex align-items-start gap-2 p-2 ${color} rounded" style="border-bottom: 1px solid #f0f0f0;">
+                        <span style="font-size: 16px;">${icon}</span>
+                        <div class="flex-grow-1">
+                            <strong>${escapeHtml(item.model)}:</strong>
+                            <span class="text-break">${escapeHtml(item.error)}</span>
+                        </div>
+                    </div>`;
+            }).join('');
+            
+            const errorHtml = `
+                <div class="alert alert-danger m-2">
+                    <div class="d-flex align-items-start gap-2 mb-2">
+                        <i class="ki-duotone ki-danger fs-3 text-danger flex-shrink-0 mt-1"></i>
+                        <div class="flex-grow-1">
+                            <strong class="d-block mb-2">Extraction failed</strong>
+                            <div class="small">
+                                ${errorItemsHtml}
+                            </div>
+                            <div class="mt-3 pt-2 border-top border-danger border-opacity-25">
+                                <small class="text-muted">
+                                    <i class="ki-duotone ki-information-5 fs-7 me-1"></i>
+                                    Please check your AI model API keys or try a different model.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
             
             if (status) {
                 status.textContent = 'Failed';
@@ -113,25 +169,13 @@
             }
             
             if (preview) {
-                preview.innerHTML = `
-                    <div class="alert alert-danger m-2">
-                        <i class="ki-duotone ki-danger fs-3 me-2"></i>
-                        <strong>Extraction failed:</strong>
-                        <div class="mt-1 small text-break">${escapeHtml(msg)}</div>
-                        ${msg.includes('API key') ? `
-                            <div class="mt-2 pt-2 border-top border-danger border-opacity-25">
-                                <small class="text-muted">
-                                    <i class="ki-duotone ki-information-5 fs-7 me-1"></i>
-                                    Please ensure your AI model API keys are properly configured in the .env file.
-                                </small>
-                            </div>
-                        ` : ''}
-                    </div>
-                `;
+                preview.innerHTML = errorHtml;
             }
-            toast(msg, 'danger');
+            
+            const firstError = modelErrors[0]?.error || 'Extraction failed';
+            toast(firstError, 'danger');
+            
         } finally {
-            // ALWAYS re-enable button and hide spinner
             if (btn) btn.disabled = false;
             if (spinner) spinner.classList.add('d-none');
             if (btnText) btnText.innerHTML = '<i class="ki-duotone ki-sparkle fs-3 me-1"></i>Extract Data';
@@ -139,14 +183,15 @@
     }
 
 
-    // Update extractFromMultipleImages to use image model selector
+    // ================================================================
+    // EXTRACT FROM MULTIPLE IMAGES - USE RAW ERRORS
+    // ================================================================
     async function extractFromMultipleImages() {
         if (uploadedImages.length === 0) {
             toast('Please upload at least one image first.', 'error');
             return;
         }
 
-        // Get the selected image model
         const model = document.getElementById('imgSelectedModel').value || document.getElementById('selectedModel').value || 'gemini';
         const preview = document.getElementById('imgPreviewPanel');
         const btn = document.getElementById('multiImgExtractBtn');
@@ -154,7 +199,6 @@
         const btnText = document.getElementById('multiImgExtractBtnText');
         const status = document.getElementById('imgExtractStatus');
 
-        // Disable button and show spinner
         btn.disabled = true;
         spinner.classList.remove('d-none');
         btnText.innerHTML = 'Extracting...';
@@ -181,6 +225,17 @@
                     method: 'POST',
                     body: JSON.stringify({ model, image_base64: img.base64 }),
                 });
+                
+                if (result.success === false) {
+                    if (result.errors && typeof result.errors === 'object') {
+                        const error = new Error('Image extraction failed');
+                        error.errors = result.errors;
+                        throw error;
+                    } else {
+                        throw new Error(result.error || result.message || 'Image extraction failed');
+                    }
+                }
+                
                 img.extractedData = result.data;
                 combinedData = { ...combinedData, ...result.data };
             }
@@ -188,7 +243,6 @@
             extractedData = combinedData;
             renderExtractedPreview(combinedData);
             
-            // Copy to image preview panel
             const sourcePanel = document.getElementById('aiPreviewPanel');
             const targetPanel = document.getElementById('imgPreviewPanel');
             if (sourcePanel && targetPanel) {
@@ -212,29 +266,86 @@
             } else {
                 toast(`Extracted data from ${uploadedImages.length} image(s). Review then apply.`, 'success');
             }
+            
         } catch (e) {
-            // Get clean error message
-            let msg = e.message || 'Extraction failed';
-            if (e.error) msg = e.error;
-            msg = msg.replace(/\[[^\]]+\]\s*/g, '').replace(/All AI models failed:\s*/g, '').trim();
+            let modelErrors = [];
             
-            if (msg.includes('API key') || msg.includes('api_key') || msg.includes('authentication')) {
-                msg = 'API key error: Please check your AI model API keys in the configuration.';
+            if (e.errors && typeof e.errors === 'object') {
+                Object.entries(e.errors).forEach(([model, error]) => {
+                    modelErrors.push({ model, error });
+                });
+            } else {
+                const rawMsg = e.message || 'Image extraction failed';
+                const parts = rawMsg.split('|');
+                if (parts.length > 1) {
+                    parts.forEach(part => {
+                        const trimmedPart = part.trim();
+                        const match = trimmedPart.match(/\[([^\]]+)\]\s*(.*)/);
+                        if (match) {
+                            modelErrors.push({ model: match[1], error: match[2] });
+                        }
+                    });
+                }
+                if (modelErrors.length === 0) {
+                    modelErrors.push({ model: 'AI Service', error: rawMsg });
+                }
             }
+
+            const getModelIcon = (model) => {
+                const lower = model.toLowerCase();
+                if (lower.includes('gemini')) return '🔴';
+                if (lower.includes('openai')) return '🟢';
+                if (lower.includes('claude')) return '🟣';
+                if (lower.includes('grok')) return '🟠';
+                if (lower.includes('cohere')) return '🟡';
+                if (lower.includes('mistral')) return '🔵';
+                return '⚠️';
+            };
             
-            preview.innerHTML = `
+            let errorItemsHtml = modelErrors.map((item, index) => {
+                const icon = getModelIcon(item.model);
+                const color = index % 2 === 0 ? 'bg-light' : '';
+                return `
+                    <div class="d-flex align-items-start gap-2 p-2 ${color} rounded" style="border-bottom: 1px solid #f0f0f0;">
+                        <span style="font-size: 16px;">${icon}</span>
+                        <div class="flex-grow-1">
+                            <strong>${escapeHtml(item.model)}:</strong>
+                            <span class="text-break">${escapeHtml(item.error)}</span>
+                        </div>
+                    </div>`;
+            }).join('');
+            
+            const errorHtml = `
                 <div class="alert alert-danger m-2">
-                    <i class="ki-duotone ki-danger fs-3 me-2"></i>
-                    <strong>Extraction failed:</strong>
-                    <div class="mt-1 small">${escapeHtml(msg)}</div>
-                </div>`;
+                    <div class="d-flex align-items-start gap-2 mb-2">
+                        <i class="ki-duotone ki-danger fs-3 text-danger flex-shrink-0 mt-1"></i>
+                        <div class="flex-grow-1">
+                            <strong class="d-block mb-2">Image extraction failed</strong>
+                            <div class="small">
+                                ${errorItemsHtml}
+                            </div>
+                            <div class="mt-3 pt-2 border-top border-danger border-opacity-25">
+                                <small class="text-muted">
+                                    <i class="ki-duotone ki-information-5 fs-7 me-1"></i>
+                                    Please check your AI model API keys or try a different model.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
             if (status) {
                 status.textContent = 'Failed';
                 status.className = 'badge badge-danger';
             }
-            toast(msg, 'danger');
+            
+            preview.innerHTML = errorHtml;
+            
+            const firstError = modelErrors[0]?.error || 'Image extraction failed';
+            toast(firstError, 'danger');
+            
         } finally {
-            // ALWAYS re-enable button and hide spinner
             btn.disabled = false;
             spinner.classList.add('d-none');
             btnText.innerHTML = '<i class="ki-duotone ki-picture fs-3 me-1"></i>Extract from All Images';
@@ -352,57 +463,39 @@
     // AUTO-SELECT DROPDOWNS - FIXED
     // ================================================================
     function autoSelectDropdowns(d) {
-        console.log('Auto-selecting dropdowns with data:', d);
-        
-        // Map data fields to dropdown prefixes
         const dropdownMap = {
-            jobtype: { dataKey: 'employment_type', fallback: 'full-time' },
-            experience: { dataKey: 'experience_level_name', fallback: 'entry level' },
-            education: { dataKey: 'education_level_name', fallback: 'Certificate' },
-            company: { dataKey: 'company_name', fallback: null },
-            category: { dataKey: 'category_name', fallback: null },
-            industry: { dataKey: 'industry_name', fallback: null },
-            location: { dataKey: 'duty_station', fallback: null },
-            salaryrange: { dataKey: 'salary_range_name', fallback: null },
+            jobtype:     { dataKey: 'job_type_name',        fallback: null },
+            experience:  { dataKey: 'experience_level_name', fallback: 'entry level' },
+            education:   { dataKey: 'education_level_name',  fallback: 'Certificate' },
+            category:    { dataKey: 'category_name',         fallback: null },
+            industry:    { dataKey: 'industry_name',         fallback: null },
+            location:    { dataKey: 'job_location_name',      fallback: null },
+            salaryrange: { dataKey: 'salary_range_name',      fallback: null },
         };
 
         Object.entries(dropdownMap).forEach(([prefix, config]) => {
-            const drop = drops[prefix];
+            const drop = drops[`f_${prefix}`];   // note: drops keys are 'f_company' etc, not 'company'
             if (!drop) return;
-            
-            const value = d[config.dataKey];
-            if (value && value !== '') {
-                // Try to find exact match
+            const value = d[config.dataKey] || config.fallback;
+            if (value) {
                 const matched = drop.setByName(value, false);
-                if (matched) {
-                    console.log(`✅ Selected ${prefix}:`, value);
-                } else {
-                    // If no exact match, try to find partial match or use fallback
-                    if (config.fallback) {
-                        const fallbackMatched = drop.setByName(config.fallback, false);
-                        if (fallbackMatched) {
-                            console.log(`⚠️ Used fallback for ${prefix}:`, config.fallback);
-                        } else {
-                            drop.reset();
-                            console.log(`❌ No match for ${prefix}:`, value);
-                        }
-                    } else {
-                        drop.reset();
-                        console.log(`❌ No match for ${prefix}:`, value);
-                    }
-                }
-            } else if (config.fallback) {
-                // Use fallback if value is empty
-                const fallbackMatched = drop.setByName(config.fallback, false);
-                if (fallbackMatched) {
-                    console.log(`⚠️ Used default fallback for ${prefix}:`, config.fallback);
-                }
+                if (!matched) drop.reset();
             } else {
                 drop.reset();
             }
         });
+
+        // Company: not selected from a list - just populate the visible search
+        // text with the AI's guess, leave it unselected so it's clearly "new".
+        if (d.company_name) {
+            const companySearch = document.getElementById('f_company_search');
+            if (companySearch) companySearch.value = d.company_name;
+            const companyHidden = document.getElementById('f_company_id');
+            if (companyHidden) companyHidden.value = '';
+        }
     }
 
+    
     // ================================================================
     // RENDER EXTRACTED PREVIEW
     // ================================================================

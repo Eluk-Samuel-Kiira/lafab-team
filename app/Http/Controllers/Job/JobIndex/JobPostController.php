@@ -24,7 +24,7 @@ class JobPostController extends Controller
      */
     public function index()
     {
-        return view('job.job-posting.ai-posting');
+        return view('job.job-index.job-posts');
     }
 
     /**
@@ -35,19 +35,21 @@ class JobPostController extends Controller
         $search = $request->get('search', '');
         $country = $request->get('country', '');
         $status = $request->get('status', '');
+        $posterId = $request->get('poster', ''); // Add this line
         $page = $request->get('page', 1);
         $perPage = $request->get('per_page', 20);
 
-        $query = JobPost::with(['company', 'jobCategory', 'jobLocation', 'jobType', 'experienceLevel']);
+        // Add 'poster' to eager loading
+        $query = JobPost::with(['company', 'jobCategory', 'jobLocation', 'jobType', 'experienceLevel', 'poster']);
 
         if (!empty($search)) {
             $query->where(function($q) use ($search) {
                 $q->where('job_title', 'like', '%' . $search . '%')
-                  ->orWhere('slug', 'like', '%' . $search . '%')
-                  ->orWhere('job_description', 'like', '%' . $search . '%')
-                  ->orWhere('legacy_alias', 'like', '%' . $search . '%')
-                  ->orWhere('legacy_id', $search)
-                  ->orWhere('id', $search);
+                ->orWhere('slug', 'like', '%' . $search . '%')
+                ->orWhere('job_description', 'like', '%' . $search . '%')
+                ->orWhere('legacy_alias', 'like', '%' . $search . '%')
+                ->orWhere('legacy_id', $search)
+                ->orWhere('id', $search);
             });
         }
 
@@ -73,6 +75,11 @@ class JobPostController extends Controller
             }
         }
 
+        // Filter by poster
+        if (!empty($posterId)) {
+            $query->where('poster_id', $posterId);
+        }
+
         $jobPosts = $query->orderBy('created_at', 'desc')
             ->paginate($perPage, ['*'], 'page', $page);
 
@@ -88,60 +95,31 @@ class JobPostController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Get all unique posters for the filter dropdown
      */
-    public function store(JobPostRequest $request)
+    public function getPosters()
     {
-        try {
-            $data = $request->validatedWithDefaults();
-            
-            // Generate slug if not provided
-            if (empty($data['slug'])) {
-                $data['slug'] = Str::slug($data['job_title']);
-                $slug = $data['slug'];
-                $counter = 1;
-                while (JobPost::where('slug', $slug)->exists()) {
-                    $slug = $data['slug'] . '-' . $counter++;
-                }
-                $data['slug'] = $slug;
-            }
-
-            // Set poster_id if not provided
-            if (empty($data['poster_id'])) {
-                $data['poster_id'] = auth()->id();
-            }
-
-            // If this is a legacy migration, set migrated_at
-            if (!empty($data['legacy_id'])) {
-                $data['migrated_at'] = now();
-                // For legacy, we might want to set default values for required fields
-                if (empty($data['is_active'])) {
-                    $data['is_active'] = true;
-                }
-            }
-
-            $jobPost = JobPost::create($data);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Job post created successfully!',
-                'data' => $jobPost->fresh()
-            ]);
-
-        } catch (ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $e->errors()
-            ], 422);
-        } catch (\Exception $e) {
-            \Log::error('Failed to create job post: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to create job post: ' . $e->getMessage()
-            ], 500);
-        }
+        $posters = JobPost::whereNotNull('poster_id')
+            ->with('poster')
+            ->get()
+            ->pluck('poster')
+            ->filter()
+            ->unique('id')
+            ->map(function($poster) {
+                return [
+                    'id' => $poster->id,
+                    'name' => $poster->name ?? $poster->email ?? 'Unknown',
+                    'email' => $poster->email
+                ];
+            })
+            ->values();
+        
+        return response()->json([
+            'success' => true,
+            'data' => $posters
+        ]);
     }
+
 
     /**
      * Display the specified resource.
@@ -171,78 +149,27 @@ class JobPostController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
-     */
-    public function update(JobPostRequest $request, $id)
-    {
-        try {
-            $jobPost = JobPost::findOrFail($id);
-            $data = $request->validatedWithDefaults();
-            
-            // Generate slug if title changed and slug not provided
-            if (isset($data['job_title']) && $jobPost->job_title !== $data['job_title'] && empty($data['slug'])) {
-                $data['slug'] = Str::slug($data['job_title']);
-                $slug = $data['slug'];
-                $counter = 1;
-                while (JobPost::where('slug', $slug)->where('id', '!=', $id)->exists()) {
-                    $slug = $data['slug'] . '-' . $counter++;
-                }
-                $data['slug'] = $slug;
-            }
-
-            // If this is a legacy migration and not already migrated
-            if (!empty($data['legacy_id']) && empty($jobPost->migrated_at)) {
-                $data['migrated_at'] = now();
-            }
-
-            $jobPost->update($data);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Job post updated successfully!',
-                'data' => $jobPost->fresh()
-            ]);
-
-        } catch (ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $e->errors()
-            ], 422);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Job post not found'
-            ], 404);
-        } catch (\Exception $e) {
-            \Log::error('Failed to update job post: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update job post: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
      * Remove the specified resource from storage.
      */
     public function destroy($id)
     {
         try {
-            $jobPost = JobPost::findOrFail($id);
+            $jobPost = JobPost::withTrashed()->findOrFail($id);
             
-            if ($jobPost->applications()->count() > 0) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Cannot delete this job post because it has associated applications.'
-                ], 400);
-            }
+            // Check if it has applications before deleting
+            // if ($jobPost->applications()->count() > 0) {
+            //     return response()->json([
+            //         'success' => false,
+            //         'message' => 'Cannot delete this job post because it has associated applications.'
+            //     ], 400);
+            // }
             
-            $jobPost->delete();
+            // Force delete permanently - no soft delete
+            $jobPost->forceDelete();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Job post deleted successfully!'
+                'message' => 'Job post permanently deleted!'
             ]);
 
         } catch (\Exception $e) {

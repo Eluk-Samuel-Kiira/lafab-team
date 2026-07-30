@@ -12,6 +12,46 @@ const AI_API_BASE = '/ai';
 const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
 
 // ================================================================
+// DROP HANDLES - wires `drops[prefix]` to the searchable-select
+// functions so autoSelectDropdowns() can actually select things.
+// ================================================================
+function makeDropHandle(prefix) {
+    return {
+        /**
+         * Find an item by label in the currently loaded options for this
+         * dropdown and select it. Exact match first; if exact=false, also
+         * tries a case-insensitive substring match either direction.
+         */
+        setByName(name, exact = true) {
+            if (!name) return false;
+            const items = searchableSelectData[prefix] || [];
+            const term = String(name).trim().toLowerCase();
+
+            let match = items.find(i => i.label.trim().toLowerCase() === term);
+
+            if (!match && !exact) {
+                match = items.find(i => i.label.toLowerCase().includes(term))
+                     || items.find(i => term.includes(i.label.toLowerCase()));
+            }
+
+            if (match) {
+                selectSearchableOption(prefix, match.id, match.label);
+                return true;
+            }
+            return false;
+        },
+        reset() {
+            clearSearchableSelect(prefix);
+        }
+    };
+}
+
+['f_company', 'f_category', 'f_industry', 'f_location', 'f_jobtype', 'f_experience', 'f_education', 'f_salaryrange']
+    .forEach(prefix => { drops[prefix] = makeDropHandle(prefix); });
+
+
+
+// ================================================================
 // DOM READY
 // ================================================================
 document.addEventListener('DOMContentLoaded', function() {
@@ -266,7 +306,7 @@ function selectImageModel(el, modelId) {
 // ================================================================
 function setSearchableSelectOptions(prefix, items, selectedId = null) {
     searchableSelectData[prefix] = items || [];
-    const hiddenInput = document.getElementById(prefix);
+    const hiddenInput = document.getElementById(`${prefix}_id`);  
     const searchInput = document.getElementById(`${prefix}_search`);
     const dropdown = document.getElementById(`${prefix}_dropdown`);
     
@@ -290,19 +330,112 @@ function setSearchableSelectOptions(prefix, items, selectedId = null) {
 function renderSearchableDropdown(prefix, items) {
     const dropdown = document.getElementById(`${prefix}_dropdown`);
     if (!dropdown) return;
+    
+    // Only update the dropdown content, don't clear it entirely
+    // Just replace the inner HTML with new options
     if (!items || items.length === 0) {
         dropdown.innerHTML = '<div class="searchable-select-empty">No matches found</div>';
         return;
     }
     dropdown.innerHTML = items.map(item => `
-        <div class="searchable-select-option" data-id="${escapeHtml(String(item.id))}" data-label="${escapeHtml(item.label)}">
+        <div class="searchable-select-option" 
+             data-id="${escapeHtml(String(item.id))}" 
+             data-label="${escapeHtml(item.label)}"
+             onclick="selectSearchableOption('${prefix}', '${item.id}', '${escapeHtml(item.label)}')"
+             style="cursor:pointer;padding:8px 14px;transition:background 0.15s ease;">
             ${escapeHtml(item.label)}
         </div>
     `).join('');
 }
 
+// ================================================================
+// CLEAR FORM - FIXED
+// ================================================================
+function clearForm() {
+    // Clear plain text fields
+    const plainFieldIds = [
+        'f_job_title', 'f_duty_station', 'f_deadline',
+        'f_email', 'f_telephone', 'f_work_hours',
+        'f_salary_amount', 'f_currency',
+        'f_meta_title', 'f_meta_description', 'f_keywords',
+    ];
+    plainFieldIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+
+    // Native <select> fields - reset to their first/default option.
+    const selectDefaults = {
+        f_employment_type: 'full-time',
+        f_location_type: 'on-site',
+        f_payment_period: 'monthly',
+    };
+    Object.entries(selectDefaults).forEach(([id, defaultValue]) => {
+        const el = document.getElementById(id);
+        if (el) el.value = defaultValue;
+    });
+
+    // Checkboxes - reset to their original checked state.
+    const checkboxDefaults = {
+        f_whatsapp: false, f_telcall: false,
+        f_featured: false, f_urgent: false, f_quickgig: false, f_verified: false,
+        f_resume: true, f_cover: false, f_academic: false, f_appletter: false,
+    };
+    Object.entries(checkboxDefaults).forEach(([id, defaultChecked]) => {
+        const el = document.getElementById(id);
+        if (el) el.checked = defaultChecked;
+    });
+
+    // Clear rich editors
+    const editors = [
+        'f_job_description_editor',
+        'f_responsibilities_editor',
+        'f_qualifications_editor',
+        'f_skills_editor',
+        'f_application_procedure_editor'
+    ];
+    editors.forEach(id => {
+        if (typeof richEditorSet === 'function') {
+            richEditorSet(id, '');
+        }
+    });
+
+    // ========== CLEAR SEARCHABLE SELECTS ==========
+    // Only clear the visible search text and the selected id.
+    // Never touch dropdown.innerHTML or searchableSelectData - the loaded
+    // options must survive a "Clear Form" click so the lists still work
+    // immediately afterward without needing to reload from the server.
+    const searchablePrefixes = [
+        'f_company', 'f_category', 'f_industry', 'f_location',
+        'f_jobtype', 'f_experience', 'f_education', 'f_salaryrange'
+    ];
+
+    searchablePrefixes.forEach(prefix => {
+        const searchInput = document.getElementById(`${prefix}_search`);
+        if (searchInput) searchInput.value = '';
+
+        const hiddenInput = document.getElementById(`${prefix}_id`);
+        if (hiddenInput) {
+            hiddenInput.value = '';
+            hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        closeSearchableDropdown(prefix);
+    });
+
+    // Clear form errors
+    const errorDiv = document.getElementById('formErrors');
+    if (errorDiv) {
+        errorDiv.innerHTML = '';
+    }
+
+    extractedData = null;
+    hideBanner();
+    toast('Form cleared successfully', 'info');
+}
+
 function selectSearchableOption(prefix, id, label) {
-    const hidden = document.getElementById(prefix);
+    const hidden = document.getElementById(`${prefix}_id`);
     const search = document.getElementById(`${prefix}_search`);
     if (hidden) hidden.value = id;
     if (search) search.value = label;
@@ -310,7 +443,7 @@ function selectSearchableOption(prefix, id, label) {
 }
 
 function getSearchableValue(prefix) {
-    const hidden = document.getElementById(prefix);
+    const hidden = document.getElementById(`${prefix}_id`);
     return hidden ? hidden.value : '';
 }
 
@@ -346,7 +479,7 @@ document.addEventListener('input', function(e) {
     const filtered = term ? items.filter(i => i.label.toLowerCase().includes(term)) : items;
     renderSearchableDropdown(prefix, filtered);
     openSearchableDropdown(prefix);
-    const hidden = document.getElementById(prefix);
+    const hidden = document.getElementById(`${prefix}_id`)
     if (hidden && hidden.value) {
         const current = items.find(i => String(i.id) === String(hidden.value));
         if (!current || current.label !== e.target.value) hidden.value = '';
@@ -365,7 +498,7 @@ document.addEventListener('focusout', function(e) {
     if (!e.target?.classList?.contains('searchable-select-input')) return;
     const prefix = e.target.id.replace('_search', '');
     setTimeout(() => {
-        const hidden = document.getElementById(prefix);
+        const hidden = document.getElementById(`${prefix}_id`); 
         const search = document.getElementById(`${prefix}_search`);
         if (hidden && search && !hidden.value) search.value = '';
     }, 150);
@@ -961,176 +1094,12 @@ function applyImageData() {
 
 
 
-// ================================================================
-// SUBMIT JOB POST
-// ================================================================
-async function submitJobPost(mode = 'live') {
-    const isDraft = mode === 'draft';
-    const btn = document.getElementById(isDraft ? 'submitDraftBtn' : 'submitJobBtn');
-    if (!btn) return;
-
-    const btnText = document.getElementById(isDraft ? 'submitDraftBtnText' : 'submitJobBtnText');
-    const btnSpinner = document.getElementById(isDraft ? 'submitDraftBtnSpinner' : 'submitJobBtnSpinner');
-    const origText = btnText?.innerHTML || '';
-
-    btn.disabled = true;
-    if (btnSpinner) btnSpinner.classList.remove('d-none');
-    if (btnText) btnText.innerHTML = isDraft ? 'Saving…' : 'Posting…';
-
-    ['f_job_description_editor', 'f_responsibilities_editor', 'f_qualifications_editor', 'f_skills_editor', 'f_application_procedure_editor']
-        .forEach(id => richEditorSync(id));
-
-    const form = document.getElementById('aiJobForm');
-    const data = {};
-    new FormData(form).forEach((v, k) => data[k] = v);
-
-    const editorFields = {
-        job_description: 'f_job_description_editor', responsibilities: 'f_responsibilities_editor',
-        qualifications: 'f_qualifications_editor', skills: 'f_skills_editor',
-        application_procedure: 'f_application_procedure_editor',
-    };
-    Object.entries(editorFields).forEach(([field, editorId]) => {
-        const content = richEditorGet(editorId);
-        if (content) data[field] = content;
-    });
-
-    ['is_resume_required','is_cover_letter_required','is_academic_documents_required',
-     'is_application_required','is_whatsapp_contact','is_telephone_call',
-     'is_featured','is_urgent','is_quick_gig','is_verified','is_simple_job',
-    ].forEach(k => { data[k] = data[k] === 'on' || data[k] === true; });
-
-    if (isDraft) data.is_active = false;
-
-    const errors = [];
-    if (!data.job_title) errors.push('Job title is required');
-    if (!data.company_id) errors.push('Company is required — type to search and click to select');
-    if (!data.job_category_id) errors.push('Category is required — type to search and click to select');
-    if (!data.industry_id) errors.push('Industry is required — type to search and click to select');
-    if (!data.job_location_id) errors.push('Location is required — type to search and click to select');
-    if (!data.job_type_id) errors.push('Job type is required — type to search and click to select');
-    if (!data.experience_level_id) errors.push('Experience level is required — type to search and click to select');
-    if (!data.education_level_id) errors.push('Education level is required — type to search and click to select');
-    if (!data.deadline) errors.push('Application deadline is required');
-    if (!richEditorGet('f_job_description_editor') && !data.job_description) errors.push('Job description is required');
-
-    if (errors.length) {
-        btn.disabled = false;
-        if (btnSpinner) btnSpinner.classList.add('d-none');
-        if (btnText) btnText.innerHTML = origText;
-        const errorDiv = document.getElementById('formErrors');
-        if (errorDiv) {
-            errorDiv.innerHTML = `<div class="alert alert-danger"><i class="ki-duotone ki-danger fs-3 me-2"></i><strong>Please complete the following:</strong><ul class="mb-0 mt-2">${errors.map(e => `<li>${e}</li>`).join('')}</ul></div>`;
-            errorDiv.scrollIntoView({ behavior: 'smooth' });
-        }
-        toast(errors[0], 'danger');
-        return;
-    }
-
-    showBanner(isDraft ? 'Saving draft…' : 'Submitting job post…');
-
-    try {
-        const res = await apiFetch('/admin/job-posts', { method: 'POST', body: JSON.stringify(data) });
-        hideBanner();
-        btn.disabled = false;
-        if (btnSpinner) btnSpinner.classList.add('d-none');
-        if (btnText) btnText.innerHTML = origText;
-        toast(isDraft ? 'Draft saved!' : 'Job posted successfully!', 'success');
-        const errorDiv = document.getElementById('formErrors');
-        if (errorDiv) {
-            errorDiv.innerHTML = `<div class="alert alert-success"><i class="ki-duotone ki-check fs-3 me-2"></i><strong>${isDraft ? 'Draft saved!' : 'Job posted!'}</strong>${res.data?.slug ? `<a href="/job-posts/${res.data.slug}" class="alert-link ms-2" target="_blank">View job <i class="ki-duotone ki-exit-right fs-3 ms-1"></i></a>` : ''}</div>`;
-        }
-        setTimeout(() => {
-            if (!isDraft) { if (confirm('Job posted! Post another?')) clearForm(); else window.location.href = '/admin/job-posts'; }
-            else { if (!confirm('Draft saved. Continue editing?')) window.location.href = '/admin/job-posts'; }
-        }, 1500);
-    } catch (err) {
-        hideBanner();
-        btn.disabled = false;
-        if (btnSpinner) btnSpinner.classList.add('d-none');
-        if (btnText) btnText.innerHTML = origText;
-        const errorMsg = err.message || 'Submission failed';
-        toast(errorMsg, 'danger');
-        const errorDiv = document.getElementById('formErrors');
-        if (errorDiv) {
-            errorDiv.innerHTML = `<div class="alert alert-danger"><i class="ki-duotone ki-danger fs-3 me-2"></i><strong>Error:</strong><div class="mt-1">${escapeHtml(errorMsg)}</div>${err.errors ? `<ul class="mb-0 mt-2">${Object.values(err.errors).flat().map(e => `<li>${e}</li>`).join('')}</ul>` : ''}</div>`;
-            errorDiv.scrollIntoView({ behavior: 'smooth' });
-        }
-    }
-}
-
-// ================================================================
-// CLEAR FORM
-// ================================================================
-function clearForm() {
-    // Reset the form
-    const form = document.getElementById('aiJobForm');
-    if (form) form.reset();
-    
-    // Clear rich editors
-    const editors = [
-        'f_job_description_editor', 
-        'f_responsibilities_editor', 
-        'f_qualifications_editor', 
-        'f_skills_editor', 
-        'f_application_procedure_editor'
-    ];
-    editors.forEach(id => {
-        if (typeof richEditorSet === 'function') {
-            richEditorSet(id, '');
-        }
-    });
-    
-    // Clear searchable selects
-    const prefixes = [
-        'f_company', 
-        'f_category', 
-        'f_industry', 
-        'f_location', 
-        'f_jobtype', 
-        'f_experience', 
-        'f_education', 
-        'f_salaryrange'
-    ];
-    prefixes.forEach(prefix => {
-        // Check if elements exist before trying to clear
-        const hidden = document.getElementById(prefix);
-        const search = document.getElementById(`${prefix}_search`);
-        const dropdown = document.getElementById(`${prefix}_dropdown`);
-        
-        if (hidden) {
-            hidden.value = '';
-        }
-        if (search) {
-            search.value = '';
-        }
-        if (dropdown) {
-            dropdown.innerHTML = '';
-            dropdown.style.display = 'none';
-            dropdown.classList.remove('show');
-        }
-    });
-    
-    // Clear form errors
-    const errorDiv = document.getElementById('formErrors');
-    if (errorDiv) {
-        errorDiv.innerHTML = '';
-    }
-    
-    // Reset extracted data
-    extractedData = null;
-    
-    // Hide AI banner
-    hideBanner();
-    
-    // Show success toast
-    toast('Form cleared successfully', 'info');
-}
 
 // ================================================================
 // SEARCHABLE SELECT - CLEAR FUNCTION
 // ================================================================
 function clearSearchableSelect(prefix) {
-    const hidden = document.getElementById(prefix);
+    const hidden = document.getElementById(`${prefix}_id`);  
     const search = document.getElementById(`${prefix}_search`);
     const dropdown = document.getElementById(`${prefix}_dropdown`);
     

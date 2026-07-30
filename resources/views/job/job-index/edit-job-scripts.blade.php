@@ -24,7 +24,23 @@ window.editJob = function(id) {
             // Set basic fields
             document.getElementById('edit_job_post_id').value = data.id;
             document.getElementById('edit_job_title').value = data.job_title || '';
-            document.getElementById('edit_deadline').value = data.deadline || '';
+            
+            if (data.deadline) {
+                // If deadline is already in YYYY-MM-DD format
+                if (data.deadline.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    document.getElementById('edit_deadline').value = data.deadline;
+                } else {
+                    // Try to parse and format
+                    try {
+                        const date = new Date(data.deadline);
+                        if (!isNaN(date.getTime())) {
+                            document.getElementById('edit_deadline').value = date.toISOString().split('T')[0];
+                        }
+                    } catch(e) {
+                        document.getElementById('edit_deadline').value = data.deadline;
+                    }
+                }
+            }
             document.getElementById('edit_salary_amount').value = data.salary_amount || '';
             document.getElementById('edit_currency').value = data.currency || 'AUD';
             document.getElementById('edit_duty_station').value = data.duty_station || '';
