@@ -5,6 +5,7 @@ namespace App\Models\Job;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\User;
+use App\Models\Job\JobPost;
 
 class JobCategory extends Model
 {
@@ -47,7 +48,7 @@ class JobCategory extends Model
 
     public function jobs()
     {
-        return $this->hasMany(Job::class, 'category_id');
+        return $this->hasMany(JobPost::class, 'job_category_id');
     }
 
     // Scopes

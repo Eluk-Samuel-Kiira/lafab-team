@@ -128,6 +128,7 @@ class JobPost extends Model
         
         // Timestamps
         'published_at',
+        'published_until',
         'featured_until',
         'migrated_at',
     ];
@@ -158,6 +159,7 @@ class JobPost extends Model
         'click_through_rate' => 'decimal:2',
         'published_at' => 'datetime',
         'featured_until' => 'datetime',
+        'published_until' => 'datetime',
         'last_pinged_at' => 'datetime',
         'last_indexed_at' => 'datetime',
         'migrated_at' => 'datetime',

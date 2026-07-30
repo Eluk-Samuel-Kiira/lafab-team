@@ -57,6 +57,102 @@
                     </div>
                     @endcan
 
+                    {{-- Jobs --}}
+                    <div class="menu-item pt-5">
+                        <div class="menu-content">
+                            <span class="menu-heading fw-bold text-uppercase fs-7">Job Posting</span>
+                        </div>
+                    </div>
+                    
+                    {{-- JOBS --}}
+
+                    {{-- AI Job Posting --}}
+                    <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.ai.job-posting*') ? 'show here' : '' }}">
+                        <span class="menu-link">
+                            <span class="menu-icon">
+                                <i class="ki-duotone ki-rocket fs-2">
+                                    <span class="path1"></span>
+                                    <span class="path2"></span>
+                                </i>
+                            </span>
+                            <span class="menu-title">AI - Job Posting</span>
+                            <span class="menu-arrow"></span>
+                        </span>
+                        <div class="menu-sub menu-sub-accordion">
+                            @php
+                                $countries = [
+                                    'AU' => '🇦🇺 Australia',
+                                    'UG' => '🇺🇬 Uganda',
+                                    'KE' => '🇰🇪 Kenya',
+                                    'TZ' => '🇹🇿 Tanzania',
+                                    'RW' => '🇷🇼 Rwanda',
+                                    'MW' => '🇲🇼 Malawi',
+                                    'ZM' => '🇿🇲 Zambia',
+                                    'SG' => '🇸🇬 Singapore',
+                                ];
+                            @endphp
+                            @foreach($countries as $code => $name)
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->route('country') == $code ? 'active' : '' }}" 
+                                href="{{ route('admin.ai.job-posting', $code) }}">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">{{ $name }}</span>
+                                </a>
+                            </div>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    {{-- Jobs Index--}}
+                    <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.companies*', 'admin.job-locations*', 'admin.job-posts*', 'admin.job-applications*') ? 'show here' : '' }}">
+                        <span class="menu-link">
+                            <span class="menu-icon">
+                                <i class="ki-duotone ki-briefcase fs-2">
+                                    <span class="path1"></span>
+                                    <span class="path2"></span>
+                                </i>
+                            </span>
+                            <span class="menu-title">Jobs Index</span>
+                            <span class="menu-arrow"></span>
+                        </span>
+                        <div class="menu-sub menu-sub-accordion">
+                            <!-- Job Posts -->
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->routeIs('admin.job-posts*') ? 'active' : '' }}" href="{{ route('admin.job-posts') }}">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">Job Posts</span>
+                                </a>
+                            </div>
+                            <!-- Companies -->
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->routeIs('admin.companies*') ? 'active' : '' }}" href="{{ route('admin.companies') }}">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">Companies</span>
+                                </a>
+                            </div>
+                            <!-- Job Locations -->
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->routeIs('admin.job-locations*') ? 'active' : '' }}" href="{{ route('admin.job-locations') }}">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">Locations</span>
+                                </a>
+                            </div>
+                            <!-- Job Applications (Coming Soon) -->
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->routeIs('admin.job-applications*') ? 'active' : '' }}" href="#">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">Applications</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>        
+
+                    {{-- Earnings --}}
+                    <div class="menu-item pt-5">
+                        <div class="menu-content">
+                            <span class="menu-heading fw-bold text-uppercase fs-7">Earnings & Expenses</span>
+                        </div>
+                    </div>
                     {{-- Compensation --}}
                     @canany(['view employees', 'view salary structure', 'view salary payments', 'view phantom equity', 'view profit share periods', 'view profit share', 'view performance reviews', 'view bonuses'])
                     <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.employees*', 'admin.salary-structures*', 'admin.employee-payments*', 'admin.department-profit-share*',  'admin.phantom-equity*', 'admin.profit-share*', 'admin.performance-reviews*', 'admin.compensation*', 'admin.bonuses*') ? 'show here' : '' }}">
@@ -176,8 +272,9 @@
                     <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.deposits*','admin.financial-report') ? 'show here' : '' }}">
                         <span class="menu-link">
                             <span class="menu-icon">
-                                <i class="ki-duotone ki-abstract-28 fs-2">
-                                    <span class="path1"></span><span class="path2"></span>
+                                <i class="ki-duotone ki-credit-cart fs-2">
+                                    <span class="path1"></span>
+                                    <span class="path2"></span>
                                 </i>
                             </span>
                             <span class="menu-title">Revenue</span>
@@ -212,8 +309,10 @@
                         ) ? 'show here' : '' }}">
                         <span class="menu-link">
                             <span class="menu-icon">
-                                <i class="ki-duotone ki-abstract-28 fs-2">
-                                    <span class="path1"></span><span class="path2"></span>
+                                <i class="ki-duotone ki-chart-pie-3 fs-2">
+                                    <span class="path1"></span>
+                                    <span class="path2"></span>
+                                    <span class="path3"></span>
                                 </i>
                             </span>
                             <span class="menu-title">Reports</span>
@@ -404,8 +503,10 @@
                     <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('users.*', 'admin.roles', 'admin.roles.*', 'admin.permissions', 'admin.permissions.*') ? 'show here' : '' }}">
                         <span class="menu-link">
                             <span class="menu-icon">
-                                <i class="ki-duotone ki-abstract-28 fs-2">
-                                    <span class="path1"></span><span class="path2"></span>
+                                <i class="ki-duotone ki-address-book fs-2">
+                                    <span class="path1"></span>
+                                    <span class="path2"></span>
+                                    <span class="path3"></span>
                                 </i>
                             </span>
                             <span class="menu-title">User Management</span>
@@ -442,7 +543,9 @@
 
                     {{-- Settings --}}
                     @canany(['view currencies', 'view payment methods', 'view payment sources', 'view payment purposes', 'view departments'])
-                    <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.currencies*', 'admin.payment-methods*', 'admin.payment-sources*', 'admin.payment-purposes*', 'admin.departments*') ? 'show here' : '' }}">
+                    <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.currencies*', 'admin.payment-methods*', 
+                        'admin.payment-sources*', 'admin.payment-purposes*', 'admin.departments*','admin.salary-ranges*', 'admin.education-levels*',
+                        'admin.experience-levels*', 'admin.job-types*', 'admin.job-categories*', 'admin.industries*') ? 'show here' : '' }}">
                         <span class="menu-link">
                             <span class="menu-icon">
                                 <i class="ki-duotone ki-setting-2 fs-2">
@@ -519,6 +622,60 @@
                                 @endcan
                             </div>
                             
+                            {{-- Job Settings --}}
+                            <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.salary-ranges*', 'admin.education-levels*',
+                                'admin.experience-levels*', 'admin.job-types*', 'admin.job-categories*', 'admin.industries*', ) ? 'show here' : '' }}">
+                                <span class="menu-link">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">Job Settings</span>
+                                    <span class="menu-arrow"></span>
+                                </span>
+                                <div class="menu-sub menu-sub-accordion">
+                                    <!-- Industries -->
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.industries*') ? 'active' : '' }}" href="{{ route('admin.industries') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Industries</span>
+                                        </a>
+                                    </div>
+                                    <!-- Job Categories -->
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.job-categories*') ? 'active' : '' }}" href="{{ route('admin.job-categories') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Job Categories</span>
+                                        </a>
+                                    </div>
+                                    <!-- Salary Ranges -->
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.salary-ranges*') ? 'active' : '' }}" href="{{ route('admin.salary-ranges') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Salary Ranges</span>
+                                        </a>
+                                    </div>
+                                    <!-- Education Levels -->
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.education-levels*') ? 'active' : '' }}" href="{{ route('admin.education-levels') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Education Levels</span>
+                                        </a>
+                                    </div>
+                                    <!-- Experience Levels -->
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.experience-levels*') ? 'active' : '' }}" href="{{ route('admin.experience-levels') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Experience Levels</span>
+                                        </a>
+                                    </div>
+                                    <!-- Job Types -->
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.job-types*') ? 'active' : '' }}" href="{{ route('admin.job-types') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Job Types</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                                                        
                         </div>
                     </div>
                     @endcanany

@@ -18,6 +18,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->string('meta_title')->nullable();
             $table->text('meta_description')->nullable();
+            $table->text('estimated_salary')->nullable();
             $table->string('icon')->nullable();
             $table->boolean('is_active')->default(true);
             $table->integer('sort_order')->default(0);
