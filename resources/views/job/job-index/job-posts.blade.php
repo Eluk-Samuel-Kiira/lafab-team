@@ -99,6 +99,7 @@
 .rich-editor-statusbar { font-size: 11px; font-family: monospace; color: #9ca3af; background: #f9fafb; border-top: 1px solid #e5e7eb; min-height: 24px; }
 </style>
 
+@can('view jobs')
 <div class="card card-flush">
     <div class="card-header mt-6">
         <div class="card-title">
@@ -138,13 +139,6 @@
                 </select>
             </div>
         </div>
-        {{--<div class="card-toolbar">
-            <button type="button" class="btn btn-primary" disabled>
-                <i class="ki-duotone ki-plus-square fs-2">
-                    <span class="path1"></span><span class="path2"></span><span class="path3"></span>
-                </i> Add Job Post (Coming Soon)
-            </button>
-        </div> --}}
     </div>
     
     <div class="card-body pt-0">
@@ -259,6 +253,7 @@
 <!-- Include Edit Modal -->
 @include('job.job-index.edit-job-modal')
 
+@endcan
 @endsection
 
 @push('scripts')

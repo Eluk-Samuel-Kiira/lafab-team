@@ -15,6 +15,12 @@ class ExperienceLevelController extends Controller
      */
     public function index()
     {
+        if (!auth()->user()->can('view experience levels')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to view experience levels.'
+            ]);
+        }
         return view('job.settings.experience-levels');
     }
 
@@ -56,6 +62,12 @@ class ExperienceLevelController extends Controller
      */
     public function store(Request $request)
     {
+        if (!auth()->user()->can('create experience levels')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to create experience levels.'
+            ]);
+        }
         try {
             // \Log::info('Store experience level request: ', $request->all());
             
@@ -140,6 +152,13 @@ class ExperienceLevelController extends Controller
      */
     public function show($id)
     {
+        if (!auth()->user()->can('view experience levels')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to view experience levels.'
+            ]);
+        }
+
         try {
             $experienceLevel = ExperienceLevel::with('creator')->findOrFail($id);
             return response()->json($experienceLevel);
@@ -156,6 +175,12 @@ class ExperienceLevelController extends Controller
      */
     public function update(Request $request, $id)
     {
+        if (!auth()->user()->can('edit experience levels')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit experience levels.'
+            ]);
+        }
         try {
             // \Log::info('Update experience level request for ID ' . $id . ': ', $request->all());
             
@@ -248,6 +273,12 @@ class ExperienceLevelController extends Controller
      */
     public function destroy($id)
     {
+        if (!auth()->user()->can('delete experience levels')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to delete experience levels.'
+            ]);
+        }
         try {
             $experienceLevel = ExperienceLevel::findOrFail($id);
             
@@ -280,6 +311,12 @@ class ExperienceLevelController extends Controller
      */
     public function toggleStatus($id)
     {
+        if (!auth()->user()->can('edit experience levels')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit experience levels.'
+            ]);
+        }
         try {
             $experienceLevel = ExperienceLevel::findOrFail($id);
             $experienceLevel->is_active = !$experienceLevel->is_active;

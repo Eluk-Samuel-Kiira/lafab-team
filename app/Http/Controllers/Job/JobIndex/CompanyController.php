@@ -18,6 +18,12 @@ class CompanyController extends Controller
      */
     public function index()
     {
+        if (!auth()->user()->can('view company')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to view company.'
+            ]);
+        }
         return view('job.job-index.companies');
     }
 
@@ -115,6 +121,13 @@ class CompanyController extends Controller
      */
     public function store(Request $request)
     {
+        if (!auth()->user()->can('create company')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to create company.'
+            ]);
+        }
+
         try {
             // \Log::info('Store company request: ', $request->all());
             
@@ -219,6 +232,12 @@ class CompanyController extends Controller
      */
     public function show($id)
     {
+        if (!auth()->user()->can('view company')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to view company.'
+            ]);
+        }
         try {
             $company = Company::with(['industry', 'location', 'creator'])->findOrFail($id);
             $company->logo_url = $company->logo_url;
@@ -236,6 +255,12 @@ class CompanyController extends Controller
      */
     public function update(Request $request, $id)
     {
+        if (!auth()->user()->can('edit company')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit company.'
+            ]);
+        }
         try {
             // \Log::info('Update company request for ID ' . $id . ': ', $request->all());
             
@@ -349,6 +374,12 @@ class CompanyController extends Controller
      */
     public function destroy($id)
     {
+        if (!auth()->user()->can('delete company')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to delete company.'
+            ]);
+        }
         try {
             $company = Company::findOrFail($id);
             
@@ -384,6 +415,12 @@ class CompanyController extends Controller
      */
     public function toggleStatus($id)
     {
+        if (!auth()->user()->can('edit company')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit company.'
+            ]);
+        }
         try {
             $company = Company::findOrFail($id);
             $company->is_active = !$company->is_active;

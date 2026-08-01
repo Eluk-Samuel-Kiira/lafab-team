@@ -415,6 +415,13 @@ class JobPostController extends Controller
 
     public function store(JobPostRequest $request)
     {
+        if (!auth()->user()->can('create jobs')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to create jobs.'
+            ]);
+        }
+
         try {
             $data = $request->validatedWithDefaults();
 
@@ -495,6 +502,14 @@ class JobPostController extends Controller
      */
     public function update(JobPostRequest $request, $id)
     {
+        
+        if (!auth()->user()->can('edit jobs')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit jobs.'
+            ]);
+        }
+
         try {
             $jobPost = JobPost::findOrFail($id);
             $data = $request->validatedWithDefaults();

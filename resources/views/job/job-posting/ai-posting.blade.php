@@ -329,7 +329,7 @@
     .rich-editor-statusbar { font-size: 11px; font-family: monospace; color: #9ca3af; background: #f9fafb; border-top: 1px solid #e5e7eb; min-height: 24px; }
     
 </style>
-
+@can('create jobs')
 {{-- AI Status Banner --}}
 <div id="aiBanner" class="alert ai-banner d-none align-items-center gap-3 mb-5" role="alert">
     <div class="spinner-border spinner-border-sm text-white flex-shrink-0" role="status">
@@ -938,6 +938,7 @@
 {{-- IMAGE EXTRACT MODAL --}}
 @include('job.job-posting.ai-image-extract')
 
+@endcan
 @endsection
 
 @push('scripts')

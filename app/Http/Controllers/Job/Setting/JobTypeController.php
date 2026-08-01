@@ -14,7 +14,13 @@ class JobTypeController extends Controller
      * Display a listing of the resource.
      */
     public function index()
-    {
+    {        
+        if (!auth()->user()->can('view job types')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to view job types.'
+            ]);
+        }
         return view('job.settings.job-types');
     }
 
@@ -57,6 +63,12 @@ class JobTypeController extends Controller
      */
     public function store(Request $request)
     {
+        if (!auth()->user()->can('create job types')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to create job types.'
+            ]);
+        }
         try {
             // \Log::info('Store job type request: ', $request->all());
             
@@ -137,6 +149,14 @@ class JobTypeController extends Controller
      */
     public function show($id)
     {
+        
+        if (!auth()->user()->can('view job types')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to view job types.'
+            ]);
+        }
+
         try {
             $jobType = JobType::with('creator')->findOrFail($id);
             return response()->json($jobType);
@@ -153,6 +173,13 @@ class JobTypeController extends Controller
      */
     public function update(Request $request, $id)
     {
+        if (!auth()->user()->can('edit job types')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit job types.'
+            ]);
+        }
+
         try {
             // \Log::info('Update job type request for ID ' . $id . ': ', $request->all());
             
@@ -241,6 +268,13 @@ class JobTypeController extends Controller
      */
     public function destroy($id)
     {
+        if (!auth()->user()->can('delete job types')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to delete job types.'
+            ]);
+        }
+
         try {
             $jobType = JobType::findOrFail($id);
             
@@ -273,6 +307,13 @@ class JobTypeController extends Controller
      */
     public function toggleStatus($id)
     {
+        if (!auth()->user()->can('edit job types')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit job types.'
+            ]);
+        }
+
         try {
             $jobType = JobType::findOrFail($id);
             $jobType->is_active = !$jobType->is_active;

@@ -64,9 +64,8 @@
                         </div>
                     </div>
                     
-                    {{-- JOBS --}}
-
                     {{-- AI Job Posting --}}
+                    @can('create jobs')
                     <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.ai.job-posting*') ? 'show here' : '' }}">
                         <span class="menu-link">
                             <span class="menu-icon">
@@ -102,9 +101,11 @@
                             @endforeach
                         </div>
                     </div>
+                    @endcan
 
-                    {{-- Jobs Index--}}
-                    <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.companies*', 'admin.job-locations*', 'admin.job-posts*', 'admin.job-applications*') ? 'show here' : '' }}">
+                    {{-- Jobs Index --}}
+                    @can('create jobs')
+                    <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.companies*', 'admin.job-locations*', 'admin.job-posts*', 'admin.job-applications*', 'admin.sitemap*') ? 'show here' : '' }}">
                         <span class="menu-link">
                             <span class="menu-icon">
                                 <i class="ki-duotone ki-briefcase fs-2">
@@ -116,36 +117,49 @@
                             <span class="menu-arrow"></span>
                         </span>
                         <div class="menu-sub menu-sub-accordion">
-                            <!-- Job Posts -->
+                            {{-- Job Posts --}}
+                            @can('view jobs')
                             <div class="menu-item">
                                 <a class="menu-link {{ request()->routeIs('admin.job-posts*') ? 'active' : '' }}" href="{{ route('admin.job-posts') }}">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                     <span class="menu-title">Job Posts</span>
                                 </a>
                             </div>
-                            <!-- Companies -->
+                            @endcan
+
+                            {{-- Companies --}}
+                            @can('view company')
                             <div class="menu-item">
                                 <a class="menu-link {{ request()->routeIs('admin.companies*') ? 'active' : '' }}" href="{{ route('admin.companies') }}">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                     <span class="menu-title">Companies</span>
                                 </a>
                             </div>
-                            <!-- Job Locations -->
+                            @endcan
+
+                            {{-- Job Locations --}}
+                            @can('view job locations')
                             <div class="menu-item">
                                 <a class="menu-link {{ request()->routeIs('admin.job-locations*') ? 'active' : '' }}" href="{{ route('admin.job-locations') }}">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                     <span class="menu-title">Locations</span>
                                 </a>
                             </div>
-                            <!-- Job Applications (Coming Soon) -->
+                            @endcan
+
+                            {{-- Sitemap & SEO --}}
+                            @can('manage sitemap')
                             <div class="menu-item">
-                                <a class="menu-link {{ request()->routeIs('admin.job-applications*') ? 'active' : '' }}" href="#">
+                                <a class="menu-link {{ request()->routeIs('admin.sitemap*') ? 'active' : '' }}" href="{{ route('admin.sitemap.dashboard') }}">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                    <span class="menu-title">Applications</span>
+                                    <span class="menu-title">Sitemap & SEO</span>
                                 </a>
                             </div>
+                            @endcan
+
                         </div>
-                    </div>        
+                    </div>
+                    @endcan     
 
                     {{-- Earnings --}}
                     <div class="menu-item pt-5">

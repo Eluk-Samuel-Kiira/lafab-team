@@ -24,6 +24,13 @@ class JobPostController extends Controller
      */
     public function index()
     {
+        if (!auth()->user()->can('view jobs')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to view jobs.'
+            ]);
+        }
+
         return view('job.job-index.job-posts');
     }
 
@@ -126,6 +133,12 @@ class JobPostController extends Controller
      */
     public function show($id)
     {
+        if (!auth()->user()->can('view jobs')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to view jobs.'
+            ]);
+        }
         try {
             $jobPost = JobPost::with([
                 'company', 
@@ -153,6 +166,12 @@ class JobPostController extends Controller
      */
     public function destroy($id)
     {
+        if (!auth()->user()->can('delete jobs')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to delete jobs.'
+            ]);
+        }
         try {
             $jobPost = JobPost::withTrashed()->findOrFail($id);
             
@@ -186,6 +205,12 @@ class JobPostController extends Controller
      */
     public function toggleStatus($id)
     {
+        if (!auth()->user()->can('edit jobs')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit jobs.'
+            ]);
+        }
         try {
             $jobPost = JobPost::findOrFail($id);
             $jobPost->is_active = !$jobPost->is_active;
@@ -211,6 +236,12 @@ class JobPostController extends Controller
      */
     public function toggleFeatured($id)
     {
+        if (!auth()->user()->can('feature jobs')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to feature jobs.'
+            ]);
+        }
         try {
             $jobPost = JobPost::findOrFail($id);
             $jobPost->is_featured = !$jobPost->is_featured;
@@ -293,6 +324,13 @@ class JobPostController extends Controller
      */
     public function feature(Request $request, $id)
     {
+        if (!auth()->user()->can('feature jobs')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to feature jobs.'
+            ]);
+        }
+        
         try {
             $request->validate([
                 'days' => 'required|integer|min:1|max:365',

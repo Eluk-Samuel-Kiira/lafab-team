@@ -323,3 +323,22 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
 
     
 });
+
+
+
+use App\Http\Controllers\Job\JobIndex\SitemapController;
+
+// Sitemap Routes
+Route::prefix('admin/sitemap')->name('admin.sitemap.')->middleware(['auth'])->group(function () {
+    Route::get('/', [SitemapController::class, 'dashboard'])->name('dashboard');
+    Route::get('/statistics', [SitemapController::class, 'getStatistics'])->name('statistics');
+    Route::get('/jobs', [SitemapController::class, 'getJobs'])->name('jobs');
+    Route::post('/ping', [SitemapController::class, 'pingJobs'])->name('ping');
+    Route::post('/mark-indexed', [SitemapController::class, 'markIndexed'])->name('mark-indexed');
+    Route::get('/generate', [SitemapController::class, 'generate'])->name('generate');
+    Route::get('/stats', [SitemapController::class, 'stats'])->name('stats');
+});
+
+// Public sitemap routes
+Route::get('/sitemaps/{country}/sitemap_index.xml', [SitemapController::class, 'index'])->name('sitemap.index');
+Route::get('/sitemaps/{country}/{filename}', [SitemapController::class, 'show'])->name('sitemap.show');

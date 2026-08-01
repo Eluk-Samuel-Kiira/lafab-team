@@ -15,6 +15,12 @@ class IndustryController extends Controller
      */
     public function index()
     {
+        if (!auth()->user()->can('view job industries')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to view job industries.'
+            ]);
+        }
         return view('job.settings.industries');
     }
 
@@ -55,6 +61,12 @@ class IndustryController extends Controller
      */
     public function store(Request $request)
     {
+        if (!auth()->user()->can('create job industries')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to create job industries.'
+            ]);
+        }
         try {
             // \Log::info('Store industry request: ', $request->all());
             
@@ -136,6 +148,13 @@ class IndustryController extends Controller
      */
     public function show($id)
     {
+        if (!auth()->user()->can('view job industries')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to view job industries.'
+            ]);
+        }
+
         try {
             $industry = Industry::with('creator')->findOrFail($id);
             return response()->json($industry);
@@ -152,6 +171,12 @@ class IndustryController extends Controller
      */
     public function update(Request $request, $id)
     {
+        if (!auth()->user()->can('edit job industries')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit job industries.'
+            ]);
+        }
         try {
             // \Log::info('Update industry request for ID ' . $id . ': ', $request->all());
             
@@ -241,6 +266,12 @@ class IndustryController extends Controller
      */
     public function destroy($id)
     {
+        if (!auth()->user()->can('delete job industries')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to delete job industries.'
+            ]);
+        }
         try {
             $industry = Industry::findOrFail($id);
             
@@ -281,6 +312,12 @@ class IndustryController extends Controller
      */
     public function toggleStatus($id)
     {
+        if (!auth()->user()->can('edit job industries')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit job industries.'
+            ]);
+        }
         try {
             $industry = Industry::findOrFail($id);
             $industry->is_active = !$industry->is_active;

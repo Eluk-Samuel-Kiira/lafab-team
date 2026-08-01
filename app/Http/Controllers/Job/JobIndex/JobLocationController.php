@@ -15,6 +15,13 @@ class JobLocationController extends Controller
      */
     public function index()
     {
+        if (!auth()->user()->can('view job locations')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to view job locations.'
+            ]);
+        }
+
         return view('job.job-index.location');
     }
 
@@ -122,6 +129,12 @@ class JobLocationController extends Controller
      */
     public function store(Request $request)
     {
+        if (!auth()->user()->can('create job locations')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to create job locations.'
+            ]);
+        }
         try {
             // \Log::info('Store job location request: ', $request->all());
             
@@ -235,6 +248,12 @@ class JobLocationController extends Controller
      */
     public function show($id)
     {
+        if (!auth()->user()->can('view job locations')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to view job locations.'
+            ]);
+        }
         try {
             $location = JobLocation::with('creator')->findOrFail($id);
             $location->country_name = $location->country_name;
@@ -253,6 +272,12 @@ class JobLocationController extends Controller
      */
     public function update(Request $request, $id)
     {
+        if (!auth()->user()->can('edit job locations')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit job locations.'
+            ]);
+        }
         try {
             // \Log::info('Update job location request for ID ' . $id . ': ', $request->all());
             
@@ -376,6 +401,12 @@ class JobLocationController extends Controller
      */
     public function destroy($id)
     {
+        if (!auth()->user()->can('delete job locations')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to delete job locations.'
+            ]);
+        }
         try {
             $location = JobLocation::findOrFail($id);
             
@@ -416,6 +447,13 @@ class JobLocationController extends Controller
      */
     public function toggleStatus($id)
     {
+        
+        if (!auth()->user()->can('edit job locations')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit job locations.'
+            ]);
+        }
         try {
             $location = JobLocation::findOrFail($id);
             $location->is_active = !$location->is_active;

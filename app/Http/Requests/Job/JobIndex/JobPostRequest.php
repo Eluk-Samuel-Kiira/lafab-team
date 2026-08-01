@@ -165,7 +165,51 @@ class JobPostRequest extends FormRequest
             $this->validateMultipleTelephones($validator);
             $this->validateDeadlineWithFeatured($validator);
             $this->validateRequiredFieldsForNonLegacy($validator);
+            $this->validateDeadlineFuture($validator);
         });
+    }
+
+    /**
+     * Validate that the deadline is in the future (not today or past)
+     */
+    protected function validateDeadlineFuture($validator)
+    {
+        // Skip for legacy migrations - they might have past deadlines
+        if ($this->input('legacy_id')) {
+            return;
+        }
+
+        // Skip for updates - jobs can expire
+        if ($this->isMethod('PATCH') || $this->isMethod('PUT')) {
+            return;
+        }
+
+        $deadline = $this->input('deadline');
+        
+        if (empty($deadline)) {
+            return;
+        }
+
+        try {
+            $deadlineDate = new \DateTime($deadline);
+            $today = new \DateTime();
+            $today->setTime(0, 0, 0); // Start of today
+            
+            // Set deadline to end of day for comparison
+            $deadlineDate->setTime(23, 59, 59);
+            
+            if ($deadlineDate <= $today) {
+                $validator->errors()->add(
+                    'deadline',
+                    'The application deadline must be a future date. Today or past dates are not allowed.'
+                );
+            }
+        } catch (\Exception $e) {
+            $validator->errors()->add(
+                'deadline',
+                'The deadline date is invalid. Please provide a valid future date.'
+            );
+        }
     }
 
     /**
@@ -607,6 +651,8 @@ class JobPostRequest extends FormRequest
             'duration.max' => 'The :attribute cannot exceed 255 characters.',
             'experience_months.integer' => 'The :attribute must be a valid integer.',
             'experience_months.min' => 'The :attribute must be at least 0.',
+            'deadline.after' => 'The application deadline must be a future date after today.',
+            'deadline.date' => 'The application deadline must be a valid date.',
         ];
     }
 
@@ -674,4 +720,6 @@ class JobPostRequest extends FormRequest
         
         return $data;
     }
+
+    
 }

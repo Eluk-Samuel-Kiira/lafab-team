@@ -16,7 +16,7 @@ class PermissionsSeeder extends Seeder
         // Reset cached roles and permissions
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // Define all permissions grouped by modules
+        // Define all permissions grouped by modules - NO DUPLICATES
         $permissions = [
             // ============================================================
             // USER MANAGEMENT
@@ -38,6 +38,9 @@ class PermissionsSeeder extends Seeder
             'edit roles',
             'delete roles',
             'view permissions',
+            'create permissions',
+            'edit permissions',
+            'delete permissions',
             'assign permissions',
             'revoke permissions',
 
@@ -53,6 +56,19 @@ class PermissionsSeeder extends Seeder
             'archive jobs',
             'feature jobs',
             'mark jobs urgent',
+            'view job analytics',
+            'export jobs',
+            'import jobs',
+            'bulk delete jobs',
+            'restore jobs',
+            'view job applications',
+            'manage job categories',
+            'manage job types',
+            'manage job locations',
+            'manage job industries',
+            'manage experience levels',
+            'manage education levels',
+            'manage salary ranges',
 
             // ============================================================
             // JOB APPLICATIONS
@@ -65,9 +81,11 @@ class PermissionsSeeder extends Seeder
             'conduct interviews',
             'rate candidates',
             'send interview feedback',
+            'export applications',
+            'bulk process applications',
 
             // ============================================================
-            // CANDIDATES
+            // CANDIDATES / JOB SEEKERS
             // ============================================================
             'view candidates',
             'create candidates',
@@ -80,9 +98,12 @@ class PermissionsSeeder extends Seeder
             'search candidates',
             'contact candidates',
             'track candidate status',
+            'view candidate profiles',
+            'manage candidate resumes',
+            'view candidate history',
 
             // ============================================================
-            // CLIENTS / COMPANIES
+            // CLIENTS 
             // ============================================================
             'view clients',
             'create clients',
@@ -91,9 +112,21 @@ class PermissionsSeeder extends Seeder
             'manage client contracts',
             'view client history',
             'deactivate clients',
+            'view client jobs',
+            'manage client relationships',
+            'view client analytics',
 
             // ============================================================
-            // RECRUITMENT
+            // COMPANIES
+            // ============================================================
+            'view company',
+            'create company',
+            'edit company',
+            'delete company',
+            'deactivate company',
+
+            // ============================================================
+            // RECRUITMENT PROCESS
             // ============================================================
             'manage job postings',
             'manage interviews',
@@ -103,6 +136,12 @@ class PermissionsSeeder extends Seeder
             'complete onboarding tasks',
             'manage offboarding',
             'view offboarding tasks',
+            'manage recruitment pipeline',
+            'view recruitment analytics',
+            'post job openings',
+            'view applicants',
+            'shortlist applicants',
+            'rate applicants',
 
             // ============================================================
             // FINANCE: REVENUE
@@ -132,10 +171,6 @@ class PermissionsSeeder extends Seeder
             'export expense reports',
             'view expense dashboard',
             'categorize expenses',
-
-            // ============================================================
-            // REPORTS: EXPENSES
-            // ============================================================
             'view expense reports',
             'view expense report dashboard',
             'view expense by category',
@@ -173,7 +208,6 @@ class PermissionsSeeder extends Seeder
             // ============================================================
             // FINANCE: FINANCIAL REPORTS
             // ============================================================
-            'view financial reports',
             'view account balances',
             'view transaction ledger',
             'view income statement',
@@ -200,6 +234,8 @@ class PermissionsSeeder extends Seeder
             'create salary structure',
             'edit salary structure',
             'delete salary structure',
+            'manage employee salaries',
+            'view employee reports',
 
             // ============================================================
             // FINANCE: SALARY PAYMENTS
@@ -311,6 +347,18 @@ class PermissionsSeeder extends Seeder
             'deactivate payment purposes',
 
             // ============================================================
+            // FINANCE: PAYMENTS
+            // ============================================================
+            'view payments',
+            'create payments',
+            'edit payments',
+            'delete payments',
+            'process payments',
+            'approve payments',
+            'cancel payments',
+            'view payment reports',
+
+            // ============================================================
             // HR: EMPLOYEES
             // ============================================================
             'view employees',
@@ -338,6 +386,7 @@ class PermissionsSeeder extends Seeder
             'delete departments',
             'view department structure',
             'manage department heads',
+            'manage department budgets',
 
             // ============================================================
             // HR: PERFORMANCE REVIEWS
@@ -370,18 +419,27 @@ class PermissionsSeeder extends Seeder
             'approve leave requests',
 
             // ============================================================
-            // HR: RECRUITMENT
+            // COMPENSATION
             // ============================================================
-            'manage recruitment',
-            'post job openings',
-            'view applicants',
-            'shortlist applicants',
-            'schedule interviews',
-            'conduct interviews',
-            'rate applicants',
-            'send offers',
-            'manage onboarding',
-            'manage offboarding',
+            'view compensation',
+            'manage salary structures',
+            'process payroll',
+            'view payroll reports',
+            'manage bonuses',
+            'manage phantom equity',
+            'view compensation reports',
+
+            // ============================================================
+            // ACCOUNTING / FINANCE
+            // ============================================================
+            'view accounting',
+            'manage payment methods',
+            'view account balances',
+            'view transaction ledger',
+            'view income statement',
+            'view cash flow',
+            'view financial reports',
+            'manage currencies',
 
             // ============================================================
             // SYSTEM SETTINGS
@@ -393,6 +451,9 @@ class PermissionsSeeder extends Seeder
             'manage audit logs',
             'clear cache',
             'manage integrations',
+            'view settings',
+            'edit settings',
+            'manage system configuration',
 
             // ============================================================
             // DASHBOARD & REPORTS
@@ -440,6 +501,77 @@ class PermissionsSeeder extends Seeder
             'export HR data',
             'export operational data',
             'schedule exports',
+
+            // ============================================================
+            // JOB SITEMAP & SEO
+            // ============================================================
+            'manage sitemap',
+            'generate sitemap',
+            'ping search engines',
+            'view seo analytics',
+            'manage seo settings',
+            'view job seo scores',
+            'optimize job seo',
+
+            // ============================================================
+            // JOB ALERTS & NOTIFICATIONS
+            // ============================================================
+            'manage job alerts',
+            'view job alerts',
+            'send job alerts',
+            'configure job notifications',
+
+            // ============================================================
+            // JOB PERFORMANCE
+            // ============================================================
+            'view job performance',
+            'view job statistics',
+            'view job conversion rates',
+            'view job click through rates',
+            'view job application rates',
+
+            // ============================================================
+            // JOB DASHBOARD
+            // ============================================================
+            'view job dashboard',
+            'view job reports',
+            'export job reports',
+            'view job analytics dashboard',
+            'view recruitment dashboard',
+
+            // ============================================================
+            // JOB ATTRIBUTES
+            // ============================================================
+            'view job categories',
+            'create job categories',
+            'edit job categories',
+            'delete job categories',
+            'view job types',
+            'create job types',
+            'edit job types',
+            'delete job types',
+            'view job locations',
+            'create job locations',
+            'edit job locations',
+            'delete job locations',
+            'view job industries',
+            'create job industries',
+            'edit job industries',
+            'delete job industries',
+            'view experience levels',
+            'create experience levels',
+            'edit experience levels',
+            'delete experience levels',
+            'view education levels',
+            'create education levels',
+            'edit education levels',
+            'delete education levels',
+            'view salary ranges',
+            'create salary ranges',
+            'edit salary ranges',
+            'delete salary ranges',
+            'manage job attributes',
+            'manage job metadata',
         ];
 
         foreach ($permissions as $permission) {

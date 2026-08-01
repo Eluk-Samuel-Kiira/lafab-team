@@ -18,6 +18,7 @@
 @endsection
 
 @section('content')
+@can('view education levels')
 <div class="card card-flush">
     <div class="card-header mt-6">
         <div class="card-title">
@@ -42,6 +43,7 @@
                 </select>
             </div>
         </div>
+        @can('create education levels')
         <div class="card-toolbar">
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#kt_modal_add_education_level">
                 <i class="ki-duotone ki-plus-square fs-2">
@@ -49,6 +51,7 @@
                 </i> Add Education Level
             </button>
         </div>
+        @endcan
     </div>
     
     <div class="card-body pt-0">
@@ -242,6 +245,7 @@
         </div>
     </div>
 </div>
+@endcan
 @endsection
 
 @push('scripts')
