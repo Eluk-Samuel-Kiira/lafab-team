@@ -99,6 +99,7 @@
 .rich-editor-statusbar { font-size: 11px; font-family: monospace; color: #9ca3af; background: #f9fafb; border-top: 1px solid #e5e7eb; min-height: 24px; }
 </style>
 
+@can('view jobs')
 <div class="card card-flush">
     <div class="card-header mt-6">
         <div class="card-title">
@@ -138,13 +139,6 @@
                 </select>
             </div>
         </div>
-        {{--<div class="card-toolbar">
-            <button type="button" class="btn btn-primary" disabled>
-                <i class="ki-duotone ki-plus-square fs-2">
-                    <span class="path1"></span><span class="path2"></span><span class="path3"></span>
-                </i> Add Job Post (Coming Soon)
-            </button>
-        </div> --}}
     </div>
     
     <div class="card-body pt-0">
@@ -169,7 +163,7 @@
                             <th class="min-w-100px">Category</th>
                             <th class="min-w-100px">Deadline</th>
                             <th class="min-w-120px">Status</th>
-                            <th class="min-w-100px">Migration</th>
+                            <th class="min-w-100px">Source</th>
                             <th class="text-end min-w-160px">Actions</th>
                         </tr>
                     </thead>
@@ -259,6 +253,7 @@
 <!-- Include Edit Modal -->
 @include('job.job-index.edit-job-modal')
 
+@endcan
 @endsection
 
 @push('scripts')
@@ -419,6 +414,23 @@ function loadJobPosts() {
         });
 }
 
+// ================================================================
+// FORMAT JOB SOURCE - Remove underscores and capitalize words
+// ================================================================
+function formatJobSource(source) {
+    if (!source) return 'N/A';
+    
+    // Replace underscores with spaces
+    let formatted = source.replace(/_/g, ' ');
+    
+    // Capitalize first letter of each word
+    formatted = formatted.split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+    
+    return formatted;
+}
+
 function renderJobPostsTable(jobPosts) {
     const tbody = document.getElementById('jobPostsTableBody');
     tbody.innerHTML = '';
@@ -443,7 +455,7 @@ function renderJobPostsTable(jobPosts) {
             ${job.is_featured ? '<span class="badge badge-light-primary">Featured</span>' : ''}
             ${job.is_urgent ? '<span class="badge badge-light-danger">Urgent</span>' : ''}
         `;
-        row.insertCell(7).innerHTML = job.migration_badge;
+        row.insertCell(7).innerHTML = job.job_source ? formatJobSource(job.job_source) : 'N/A';
         row.insertCell(8).innerHTML = `
             <div class="d-flex justify-content-end gap-2">
                 <button class="btn btn-sm btn-icon btn-light" onclick="viewJob(${job.id})" title="View">

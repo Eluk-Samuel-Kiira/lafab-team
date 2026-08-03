@@ -229,6 +229,12 @@ class DatabaseMigrationController extends Controller
      */
     public function migrate(Request $request)
     {
+        if (!auth()->user()->role('super_admin')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to migrate legacy data.'
+            ]);
+        }
         $request->validate([
             'table' => 'required|string',
             'country' => 'nullable|string|size:2',

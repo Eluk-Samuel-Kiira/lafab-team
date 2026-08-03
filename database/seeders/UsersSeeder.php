@@ -100,7 +100,7 @@ class UsersSeeder extends Seeder
                 'email' => 'john.doe@lafab.com',
                 'password' => 'Admin@123',
                 'phone' => '+256745678901',
-                'role' => 'admin',
+                'role' => 'super_admin',
                 'department_id' => $itDept?->id ?? $opsDept?->id,
                 'is_active' => true,
             ],

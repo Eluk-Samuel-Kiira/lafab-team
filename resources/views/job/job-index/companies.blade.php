@@ -99,6 +99,7 @@
 .rich-editor-statusbar { font-size: 11px; font-family: monospace; color: #9ca3af; background: #f9fafb; border-top: 1px solid #e5e7eb; min-height: 24px; }
 </style>
 
+@can('view company')
 <div class="card card-flush">
     <div class="card-header mt-6">
         <div class="card-title">
@@ -133,6 +134,7 @@
                 </select>
             </div>
         </div>
+        @can('create company')
         <div class="card-toolbar">
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#kt_modal_add_company">
                 <i class="ki-duotone ki-plus-square fs-2">
@@ -140,6 +142,7 @@
                 </i> Add Company
             </button>
         </div>
+        @endcan
     </div>
     
     <div class="card-body pt-0">
@@ -550,6 +553,7 @@
         </div>
     </div>
 </div>
+@endcan
 @endsection
 
 @push('scripts')

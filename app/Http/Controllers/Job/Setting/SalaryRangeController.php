@@ -65,6 +65,13 @@ class SalaryRangeController extends Controller
     {
         try {
             
+            if (!auth()->user()->can('create salary ranges')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have permission to create salary ranges.'
+                ]);
+            }
+
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'min_salary' => 'nullable|numeric|min:0',
@@ -139,6 +146,13 @@ class SalaryRangeController extends Controller
      */
     public function show($id)
     {
+        if (!auth()->user()->can('view salary ranges')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to view salary ranges.'
+            ]);
+        }
+
         try {
             $salaryRange = SalaryRange::with('creator')->findOrFail($id);
             return response()->json($salaryRange);
@@ -156,6 +170,13 @@ class SalaryRangeController extends Controller
      */
     public function update(Request $request, $id)
     {
+        
+        if (!auth()->user()->can('edit salary ranges')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit salary ranges.'
+            ]);
+        }
         
         $request->validate([
             'name' => 'required|string|max:255',
@@ -228,6 +249,13 @@ class SalaryRangeController extends Controller
      */
     public function destroy($id)
     {
+        if (!auth()->user()->can('delete salary ranges')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to delete salary ranges.'
+            ]);
+        }
+
         try {
             $salaryRange = SalaryRange::findOrFail($id);
             
@@ -259,6 +287,14 @@ class SalaryRangeController extends Controller
      */
     public function toggleStatus($id)
     {
+        
+        if (!auth()->user()->can('edit salary ranges')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit salary ranges.'
+            ]);
+        }
+
         try {
             $salaryRange = SalaryRange::findOrFail($id);
             $salaryRange->is_active = !$salaryRange->is_active;

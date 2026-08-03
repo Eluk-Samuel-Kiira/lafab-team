@@ -86,14 +86,28 @@
                         </div>
                         
                         <div class="fv-row">
-                            <label class="fs-5 fw-bold form-label mb-2">Role Permissions</label>
-                            <div class="table-responsive">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-3">
+                                <label class="fs-5 fw-bold form-label mb-0">Role Permissions</label>
+                                <div class="d-flex flex-wrap align-items-center gap-2">
+                                    <div class="d-flex align-items-center position-relative">
+                                        <i class="ki-duotone ki-magnifier fs-5 position-absolute ms-3">
+                                            <span class="path1"></span>
+                                            <span class="path2"></span>
+                                        </i>
+                                        <input type="text" class="form-control form-control-sm form-control-solid ps-10 permission-search" data-target="permissionsTableAdd" placeholder="Search permissions" style="width: 200px;" />
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-light-primary select-all-permissions" data-target="permissionsTableAdd">Select All</button>
+                                    <button type="button" class="btn btn-sm btn-light-danger deselect-all-permissions" data-target="permissionsTableAdd">Deselect All</button>
+                                </div>
+                            </div>
+                            <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
                                 <table class="table align-middle table-row-dashed fs-6 gy-5">
                                     <tbody class="text-gray-600 fw-semibold" id="permissionsTableAdd">
                                         <!-- Permissions will be loaded here -->
                                     </tbody>
                                 </table>
                             </div>
+                            <div class="text-center text-muted py-3 d-none" id="noPermissionsAdd">No permissions match your search.</div>
                         </div>
                         
                         <div class="text-center pt-15">
@@ -135,14 +149,28 @@
                         </div>
                         
                         <div class="fv-row">
-                            <label class="fs-5 fw-bold form-label mb-2">Role Permissions</label>
-                            <div class="table-responsive">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-3">
+                                <label class="fs-5 fw-bold form-label mb-0">Role Permissions</label>
+                                <div class="d-flex flex-wrap align-items-center gap-2">
+                                    <div class="d-flex align-items-center position-relative">
+                                        <i class="ki-duotone ki-magnifier fs-5 position-absolute ms-3">
+                                            <span class="path1"></span>
+                                            <span class="path2"></span>
+                                        </i>
+                                        <input type="text" class="form-control form-control-sm form-control-solid ps-10 permission-search" data-target="permissionsTableEdit" placeholder="Search permissions" style="width: 200px;" />
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-light-primary select-all-permissions" data-target="permissionsTableEdit">Select All</button>
+                                    <button type="button" class="btn btn-sm btn-light-danger deselect-all-permissions" data-target="permissionsTableEdit">Deselect All</button>
+                                </div>
+                            </div>
+                            <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
                                 <table class="table align-middle table-row-dashed fs-6 gy-5">
                                     <tbody class="text-gray-600 fw-semibold" id="permissionsTableEdit">
                                         <!-- Permissions will be loaded here -->
                                     </tbody>
                                 </table>
                             </div>
+                            <div class="text-center text-muted py-3 d-none" id="noPermissionsEdit">No permissions match your search.</div>
                         </div>
                         
                         <div class="text-center pt-15">
@@ -222,7 +250,103 @@
                 }, 300);
             });
         }
+        
+        // Setup permission search inputs (Add & Edit modals)
+        document.querySelectorAll('.permission-search').forEach(input => {
+            let permSearchTimeout;
+            input.addEventListener('keyup', function() {
+                clearTimeout(permSearchTimeout);
+                const targetId = this.getAttribute('data-target');
+                permSearchTimeout = setTimeout(() => {
+                    filterPermissionsTable(targetId, this.value);
+                }, 200);
+            });
+        });
+        
+        // Setup select all buttons (Add & Edit modals)
+        document.querySelectorAll('.select-all-permissions').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const targetId = this.getAttribute('data-target');
+                document.querySelectorAll(`#${targetId} .permission-checkbox`).forEach(cb => {
+                    const label = cb.closest('label');
+                    if (!label || !label.classList.contains('d-none')) {
+                        cb.checked = true;
+                    }
+                });
+            });
+        });
+        
+        // Setup deselect all buttons (Add & Edit modals)
+        document.querySelectorAll('.deselect-all-permissions').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const targetId = this.getAttribute('data-target');
+                document.querySelectorAll(`#${targetId} .permission-checkbox`).forEach(cb => {
+                    const label = cb.closest('label');
+                    if (!label || !label.classList.contains('d-none')) {
+                        cb.checked = false;
+                    }
+                });
+            });
+        });
+        
+        // Reset permission search/filter whenever a modal is opened
+        const addModalEl = document.getElementById('kt_modal_add_role');
+        if (addModalEl) {
+            addModalEl.addEventListener('show.bs.modal', function() {
+                resetPermissionSearch('permissionsTableAdd');
+            });
+        }
+        const editModalEl = document.getElementById('kt_modal_update_role');
+        if (editModalEl) {
+            editModalEl.addEventListener('show.bs.modal', function() {
+                resetPermissionSearch('permissionsTableEdit');
+            });
+        }
     });
+    
+    // Filter a permissions table (Add or Edit) by search term.
+    // Matches against the permission name or the category name; hides
+    // non-matching checkboxes and hides a whole row if nothing in it matches.
+    function filterPermissionsTable(tableId, searchTerm) {
+        const table = document.getElementById(tableId);
+        if (!table) return;
+        
+        const term = searchTerm.toLowerCase().trim();
+        const rows = table.querySelectorAll('tr');
+        let anyVisible = false;
+        
+        rows.forEach(row => {
+            const categoryCell = row.querySelector('td.text-gray-800');
+            const categoryMatches = !!term && categoryCell && categoryCell.textContent.toLowerCase().includes(term);
+            
+            let rowHasMatch = false;
+            row.querySelectorAll('label.form-check').forEach(label => {
+                const checkbox = label.querySelector('.permission-checkbox');
+                const permName = checkbox ? (checkbox.getAttribute('data-permission-name') || '') : '';
+                const labelText = label.textContent || '';
+                const matches = !term || categoryMatches || permName.toLowerCase().includes(term) || labelText.toLowerCase().includes(term);
+                
+                label.classList.toggle('d-none', !matches);
+                if (matches) rowHasMatch = true;
+            });
+            
+            row.classList.toggle('d-none', !rowHasMatch);
+            if (rowHasMatch) anyVisible = true;
+        });
+        
+        const noResultsId = tableId === 'permissionsTableAdd' ? 'noPermissionsAdd' : 'noPermissionsEdit';
+        const noResultsEl = document.getElementById(noResultsId);
+        if (noResultsEl) {
+            noResultsEl.classList.toggle('d-none', anyVisible || !term);
+        }
+    }
+    
+    // Clear the search box and reset visibility for a permissions table
+    function resetPermissionSearch(tableId) {
+        const searchInput = document.querySelector(`.permission-search[data-target="${tableId}"]`);
+        if (searchInput) searchInput.value = '';
+        filterPermissionsTable(tableId, '');
+    }
     
     // Load all permissions
     function loadPermissions() {

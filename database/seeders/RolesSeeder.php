@@ -253,11 +253,7 @@ class RolesSeeder extends Seeder
                     'view attendance', 'create attendance', 'edit attendance', 'delete attendance',
                     'approve attendance', 'export attendance reports', 'view timesheets', 'approve timesheets',
                     'manage leave requests', 'approve leave requests',
-                    
-                    // Recruitment
-                    'manage recruitment', 'post job openings', 'view applicants', 'shortlist applicants',
-                    'schedule interviews', 'conduct interviews', 'rate applicants', 'send offers',
-                    'manage onboarding', 'manage offboarding',
+                
                     
                     // Salary (view only)
                     'view salaries', 'view salary structure',

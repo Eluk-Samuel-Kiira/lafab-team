@@ -3,6 +3,7 @@
 @section('title', 'Database Migration')
 @section('page_title', 'Database Migration Dashboard')
 
+@role('super_admin')
 @section('breadcrumb')
     <li class="breadcrumb-item text-muted">
         <a href="{{ route('admin.dashboard') }}" class="text-muted text-hover-primary">Home</a>
@@ -227,8 +228,8 @@
         </div>
     </div>
 </div>
-
 @endsection
+@endrole
 
 @push('scripts')
 <script>

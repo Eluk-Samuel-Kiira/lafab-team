@@ -15,6 +15,12 @@ class EducationLevelController extends Controller
      */
     public function index()
     {
+        if (!auth()->user()->can('view education levels')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to view education levels.'
+            ]);
+        }
         return view('job.settings.education-levels');
     }
 
@@ -63,6 +69,13 @@ class EducationLevelController extends Controller
      */
     public function store(Request $request)
     {
+        if (!auth()->user()->can('create education levels')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to create education levels.'
+            ]);
+        }
+
         try {
             // \Log::info('Store education level request: ', $request->all());
             
@@ -145,6 +158,13 @@ class EducationLevelController extends Controller
      */
     public function show($id)
     {
+        if (!auth()->user()->can('view education levels')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to view education levels.'
+            ]);
+        }
+
         try {
             $educationLevel = EducationLevel::with('creator')->findOrFail($id);
             return response()->json($educationLevel);
@@ -161,6 +181,13 @@ class EducationLevelController extends Controller
      */
     public function update(Request $request, $id)
     {
+        if (!auth()->user()->can('edit education levels')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit education levels.'
+            ]);
+        }
+
         try {
             // \Log::info('Update education level request for ID ' . $id . ': ', $request->all());
             
@@ -252,6 +279,13 @@ class EducationLevelController extends Controller
      */
     public function destroy($id)
     {
+        if (!auth()->user()->can('delete education levels')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to delete education levels.'
+            ]);
+        }
+
         try {
             $educationLevel = EducationLevel::findOrFail($id);
             
@@ -284,6 +318,12 @@ class EducationLevelController extends Controller
      */
     public function toggleStatus($id)
     {
+        if (!auth()->user()->can('edit education levels')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit education levels.'
+            ]);
+        }
         try {
             $educationLevel = EducationLevel::findOrFail($id);
             $educationLevel->is_active = !$educationLevel->is_active;

@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Schema::dropIfExists('job_posts');
         Schema::create('job_posts', function (Blueprint $table) {
             $table->id();
             
@@ -59,6 +60,7 @@ return new class extends Migration
             $table->decimal('salary_amount', 12, 2)->nullable();
             $table->string('currency')->default('AUD');
             $table->string('payment_period')->nullable();
+            $table->string('job_source')->nullable();
             $table->decimal('base_salary', 12, 2)->nullable();
             $table->string('salary_range_from')->nullable();
             $table->string('salary_range_to')->nullable();
@@ -132,7 +134,7 @@ return new class extends Migration
             // Timestamps
             $table->timestamps();
             $table->timestamp('published_at')->nullable();            
-            $table->timestamp('published_until')->nullable();            
+            $table->datetime('published_until')->nullable();            
             $table->datetime('featured_until')->nullable();
             $table->datetime('last_pinged_at')->nullable();
             $table->datetime('last_indexed_at')->nullable();

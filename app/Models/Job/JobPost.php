@@ -56,6 +56,7 @@ class JobPost extends Model
         'salary_amount',
         'currency',
         'payment_period',
+        'job_source',
         'base_salary',
         'salary_range_from',
         'salary_range_to',
@@ -280,5 +281,63 @@ class JobPost extends Model
     {
         if (!$this->deadline) return null;
         return now()->diffInDays($this->deadline, false);
+    }
+
+
+    /**
+     * Get the URL for this job post
+     */
+    public function getUrlAttribute(): string
+    {
+        $baseUrl = config('app.url');
+        $country = $this->country_code ?? 'AU';
+        
+        // Get country domain if available
+        $countryDomains = [
+            'AU' => 'greataustraliajobs.com',
+            'UG' => 'greatugandajobs.com',
+            'KE' => 'greatkenyanjobs.com',
+            'TZ' => 'greattanzaniajobs.com',
+            'RW' => 'greatrwandajobs.com',
+            'MW' => 'greatmalawijobs.com',
+            'ZM' => 'greatzambiajobs.com',
+            'SG' => 'greatsingaporejobs.com',
+        ];
+
+        $domain = $countryDomains[$country] ?? parse_url($baseUrl, PHP_URL_HOST);
+        $scheme = parse_url($baseUrl, PHP_URL_SCHEME) ?: 'https';
+        
+        // Use legacy URL structure if legacy_id exists
+        if ($this->legacy_id) {
+            return "{$scheme}://{$domain}/jobs/legacy/{$this->legacy_id}/{$this->slug}";
+        }
+        
+        return "{$scheme}://{$domain}/jobs/{$this->slug}";
+    }
+
+    /**
+     * Get country-specific URL
+     */
+    public function getCountryUrl(string $countryCode): string
+    {
+        $countryDomains = [
+            'AU' => 'greataustraliajobs.com',
+            'UG' => 'greatugandajobs.com',
+            'KE' => 'greatkenyajobs.com',
+            'TZ' => 'greattanzaniajobs.com',
+            'RW' => 'greatrwandajobs.com',
+            'MW' => 'greatmalawijobs.com',
+            'ZM' => 'greatzambiajobs.com',
+            'SG' => 'greatsingaporejobs.com',
+        ];
+
+        $domain = $countryDomains[$countryCode] ?? parse_url(config('app.url'), PHP_URL_HOST);
+        $scheme = parse_url(config('app.url'), PHP_URL_SCHEME) ?: 'https';
+        
+        if ($this->legacy_id) {
+            return "{$scheme}://{$domain}/jobs/legacy/{$this->legacy_id}/{$this->slug}";
+        }
+        
+        return "{$scheme}://{$domain}/jobs/{$this->slug}";
     }
 }

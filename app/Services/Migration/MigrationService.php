@@ -123,6 +123,7 @@ class MigrationService
                     'title' => 'job_title',
                     'alias' => 'slug',
                     'description' => 'job_description',
+                    'jobcategory' => 'job_category_id',
                     'qualifications' => 'qualifications',
                     'prefferdskills' => 'skills',
                     'applyinfo' => 'application_procedure',
@@ -146,6 +147,7 @@ class MigrationService
                     'salaryrangefrom' => 'salary_range_from',
                     'salaryrangeto' => 'salary_range_to',
                     'startpublishing' => 'published_at',
+                    'stoppublishing' => 'published_until',
                     'stoppublishing' => 'deadline',
                     'created' => 'created_at',
                 ],
@@ -408,26 +410,25 @@ class MigrationService
                     $data['hits'] = 0;
                 }
 
-                // NOTE: "id" is intentionally left out of $data. It's a plain
-                // auto-increment column - identity/lookup across systems should
-                // go through legacy_id + country_code instead (see relation
-                // resolution below, and Company/JobCategory/JobPost scopes).
+                // Generate slug
+                $data['slug'] = $this->generateSlug($tableKey, $data, $legacyId, $countryField, $forceCountry, $model);
 
-                // Generate slug if not present
-                if (empty($data['slug']) && !empty($data['name'])) {
-                    $data['slug'] = Str::slug($data['name']);
-                    if (empty($data['slug'])) {
-                        $data['slug'] = 'item-' . $legacyId;
-                    }
-                    // Ensure uniqueness with country (include trashed rows - the unique
-                    // index doesn't care whether Eloquent thinks a row is "deleted")
-                    $slug = $data['slug'];
-                    $counter = 1;
-                    $slugQuery = $this->usesSoftDeletes($model) ? $model::withTrashed() : $model::query();
-                    while ($slugQuery->where('slug', $slug)->where($countryField, $forceCountry)->exists()) {
-                        $slug = $data['slug'] . '-' . $counter++;
-                    }
-                    $data['slug'] = $slug;
+                // Final safety check for edge cases (extremely unlikely with legacy_id appended)
+                $slugQuery = $this->usesSoftDeletes($model) ? $model::withTrashed() : $model::query();
+                $counter = 0;
+                $originalSlug = $data['slug'];
+                while ($slugQuery->where('slug', $data['slug'])->where($countryField, $forceCountry)->exists()) {
+                    $counter++;
+                    $data['slug'] = $originalSlug . '-' . $counter;
+                }
+
+                // Final safety check for edge cases (extremely unlikely with legacy_id appended)
+                $slugQuery = $this->usesSoftDeletes($model) ? $model::withTrashed() : $model::query();
+                $counter = 0;
+                $originalSlug = $data['slug'];
+                while ($slugQuery->where('slug', $data['slug'])->where($countryField, $forceCountry)->exists()) {
+                    $counter++;
+                    $data['slug'] = $originalSlug . '-' . $counter;
                 }
 
                 // Handle relations
@@ -504,6 +505,50 @@ class MigrationService
         }
 
         return $available;
+    }
+
+    /**
+     * Generate a unique slug with prefix and legacy_id
+     */
+    protected function generateSlug($tableKey, $data, $legacyId, $countryField, $forceCountry, $model)
+    {
+        $prefixes = [
+            'job_posts' => 'job',
+            'companies' => 'company',
+            'job_categories' => 'category',
+        ];
+        
+        $prefix = $prefixes[$tableKey] ?? 'item';
+        
+        // Get base slug from alias, name, or title
+        if (!empty($data['slug'])) {
+            $baseSlug = $data['slug'];
+        } elseif (!empty($data['name'])) {
+            $baseSlug = Str::slug($data['name']);
+        } elseif (!empty($data['job_title'])) {
+            $baseSlug = Str::slug($data['job_title']);
+        } else {
+            $baseSlug = $prefix;
+        }
+        
+        // For job_posts, companies, and job_categories - prefix with type and append legacy_id
+        if (in_array($tableKey, ['job_posts', 'companies', 'job_categories'])) {
+            $data['slug'] = $prefix . '-' . $baseSlug . '-' . $legacyId;
+        } else {
+            // For other tables, just append legacy_id
+            $data['slug'] = $baseSlug . '-' . $legacyId;
+        }
+        
+        // Final safety check
+        $slugQuery = $this->usesSoftDeletes($model) ? $model::withTrashed() : $model::query();
+        $counter = 0;
+        $originalSlug = $data['slug'];
+        while ($slugQuery->where('slug', $data['slug'])->where($countryField, $forceCountry)->exists()) {
+            $counter++;
+            $data['slug'] = $originalSlug . '-' . $counter;
+        }
+        
+        return $data['slug'];
     }
 
     /**

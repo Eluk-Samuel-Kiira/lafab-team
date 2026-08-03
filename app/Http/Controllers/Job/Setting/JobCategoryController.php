@@ -15,6 +15,12 @@ class JobCategoryController extends Controller
      */
     public function index()
     {
+        if (!auth()->user()->can('view job categories')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to view job categories.'
+            ]);
+        }
         return view('job.settings.job-categories');
     }
 
@@ -64,6 +70,12 @@ class JobCategoryController extends Controller
      */
     public function store(Request $request)
     {
+        if (!auth()->user()->can('create job categories')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to create job categories.'
+            ]);
+        }
         try {
             // \Log::info('Store job category request: ', $request->all());
             
@@ -165,6 +177,14 @@ class JobCategoryController extends Controller
      */
     public function show($id)
     {
+        
+        if (!auth()->user()->can('view job categories')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to view job categories.'
+            ]);
+        }
+
         try {
             $category = JobCategory::with('migratedBy')->findOrFail($id);
             return response()->json($category);
@@ -181,6 +201,13 @@ class JobCategoryController extends Controller
      */
     public function update(Request $request, $id)
     {
+        if (!auth()->user()->can('edit job categories')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit job categories.'
+            ]);
+        }
+
         try {
             // \Log::info('Update job category request for ID ' . $id . ': ', $request->all());
             
@@ -287,6 +314,12 @@ class JobCategoryController extends Controller
      */
     public function destroy($id)
     {
+        if (!auth()->user()->can('delete job categories')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to delete job categories.'
+            ]);
+        }
         try {
             $category = JobCategory::findOrFail($id);
             
@@ -319,6 +352,13 @@ class JobCategoryController extends Controller
      */
     public function toggleStatus($id)
     {
+        if (!auth()->user()->can('edit job categories')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit job categories.'
+            ]);
+        }
+        
         try {
             $category = JobCategory::findOrFail($id);
             $category->is_active = !$category->is_active;

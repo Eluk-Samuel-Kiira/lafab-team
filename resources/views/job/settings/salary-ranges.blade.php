@@ -3,6 +3,7 @@
 @section('title', 'Salary Ranges')
 @section('page_title', 'Salary Ranges')
 
+
 @section('breadcrumb')
     <li class="breadcrumb-item text-muted">
         <a href="{{ route('admin.dashboard') }}" class="text-muted text-hover-primary">Home</a>
@@ -18,6 +19,7 @@
 @endsection
 
 @section('content')
+@can('view salary ranges')
 <div class="card card-flush">
     <div class="card-header mt-6">
         <div class="card-title">
@@ -42,6 +44,7 @@
                 </select>
             </div>
         </div>
+        @can('create salary ranges')
         <div class="card-toolbar">
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#kt_modal_add_salary_range">
                 <i class="ki-duotone ki-plus-square fs-2">
@@ -49,6 +52,7 @@
                 </i> Add Salary Range
             </button>
         </div>
+        @endcan
     </div>
     
     <div class="card-body pt-0">
@@ -295,6 +299,7 @@
         </div>
     </div>
 </div>
+@endcan
 @endsection
 
 @push('scripts')
