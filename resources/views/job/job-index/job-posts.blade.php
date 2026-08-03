@@ -163,7 +163,7 @@
                             <th class="min-w-100px">Category</th>
                             <th class="min-w-100px">Deadline</th>
                             <th class="min-w-120px">Status</th>
-                            <th class="min-w-100px">Migration</th>
+                            <th class="min-w-100px">Source</th>
                             <th class="text-end min-w-160px">Actions</th>
                         </tr>
                     </thead>
@@ -414,6 +414,23 @@ function loadJobPosts() {
         });
 }
 
+// ================================================================
+// FORMAT JOB SOURCE - Remove underscores and capitalize words
+// ================================================================
+function formatJobSource(source) {
+    if (!source) return 'N/A';
+    
+    // Replace underscores with spaces
+    let formatted = source.replace(/_/g, ' ');
+    
+    // Capitalize first letter of each word
+    formatted = formatted.split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+    
+    return formatted;
+}
+
 function renderJobPostsTable(jobPosts) {
     const tbody = document.getElementById('jobPostsTableBody');
     tbody.innerHTML = '';
@@ -438,7 +455,7 @@ function renderJobPostsTable(jobPosts) {
             ${job.is_featured ? '<span class="badge badge-light-primary">Featured</span>' : ''}
             ${job.is_urgent ? '<span class="badge badge-light-danger">Urgent</span>' : ''}
         `;
-        row.insertCell(7).innerHTML = job.migration_badge;
+        row.insertCell(7).innerHTML = job.job_source ? formatJobSource(job.job_source) : 'N/A';
         row.insertCell(8).innerHTML = `
             <div class="d-flex justify-content-end gap-2">
                 <button class="btn btn-sm btn-icon btn-light" onclick="viewJob(${job.id})" title="View">

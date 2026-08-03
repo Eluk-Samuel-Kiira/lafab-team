@@ -10,6 +10,7 @@ use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Support\Str;
+use App\Models\Job\JobPost;
 
 
 class User extends Authenticatable
@@ -247,6 +248,14 @@ class User extends Authenticatable
     public function getEmployeeAttribute()
     {
         return $this->employee;
+    }
+
+    /**
+     * Get the job posts created by this user (as poster)
+     */
+    public function jobPosts()
+    {
+        return $this->hasMany(JobPost::class, 'poster_id');
     }
 
 }

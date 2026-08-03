@@ -60,6 +60,7 @@ return new class extends Migration
             $table->decimal('salary_amount', 12, 2)->nullable();
             $table->string('currency')->default('AUD');
             $table->string('payment_period')->nullable();
+            $table->string('job_source')->nullable();
             $table->decimal('base_salary', 12, 2)->nullable();
             $table->string('salary_range_from')->nullable();
             $table->string('salary_range_to')->nullable();

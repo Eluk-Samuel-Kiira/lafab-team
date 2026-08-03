@@ -1,5 +1,3 @@
-
-
 <script>
     // ================================================================
 // VIEW JOB - COMPLETE WITH ALL DETAILS AND STATS
@@ -37,13 +35,11 @@ window.viewJob = function(id) {
             `;
 
             // Build contact methods badges
-            const contactBadges = `
-                ${data.is_whatsapp_contact ? '<span class="badge badge-light-success me-1">WhatsApp</span>' : ''}
-                ${data.is_telephone_call ? '<span class="badge badge-light-info me-1">Phone Call</span>' : ''}
-                ${data.is_application_required ? '<span class="badge badge-light-primary me-1">Application Required</span>' : ''}
-                ${data.is_resume_required ? '<span class="badge badge-light-success me-1">Resume Required</span>' : ''}
-                ${data.is_cover_letter_required ? '<span class="badge badge-light-warning me-1">Cover Letter</span>' : ''}
-                ${data.is_academic_documents_required ? '<span class="badge badge-light-info me-1">Academic Docs</span>' : ''}
+            const contactMethods = `
+                <div class="d-flex flex-wrap gap-1">
+                    ${data.is_whatsapp_contact ? '<span class="badge badge-light-success">WhatsApp Contact</span>' : ''}
+                    ${data.is_telephone_call ? '<span class="badge badge-light-info">Telephone Call</span>' : ''}
+                </div>
             `;
 
             // Build application requirements badges
@@ -56,13 +52,10 @@ window.viewJob = function(id) {
                 </div>
             `;
 
-            // Build contact methods
-            const contactMethods = `
-                <div class="d-flex flex-wrap gap-1">
-                    ${data.is_whatsapp_contact ? '<span class="badge badge-light-success">WhatsApp Contact</span>' : ''}
-                    ${data.is_telephone_call ? '<span class="badge badge-light-info">Telephone Call</span>' : ''}
-                </div>
-            `;
+            // Job source badge
+            const jobSourceBadge = data.job_source ? 
+                `<span class="badge badge-light-primary">${formatJobSource(data.job_source)}</span>` : 
+                '<span class="text-muted">Not specified</span>';
 
             let html = `
                 <!-- Header Stats -->
@@ -169,6 +162,7 @@ window.viewJob = function(id) {
                         <div class="border rounded p-4 h-100">
                             <span class="text-muted d-block fs-7">Education Level</span>
                             <span class="fw-bold">${escapeHtml(get(data, 'education_level.name', 'N/A'))}</span>
+                            ${data.heighest_finished_education ? `<div class="text-muted fs-8">Highest: ${escapeHtml(data.heighest_finished_education)}</div>` : ''}
                         </div>
                     </div>
                 </div>
@@ -183,6 +177,8 @@ window.viewJob = function(id) {
                                 ${data.payment_period ? `<div class="text-muted fs-8">${data.payment_period}</div>` : ''}
                             ` : '<span class="text-muted">Not specified</span>'}
                             ${data.salary_range ? `<div class="text-muted fs-8">${escapeHtml(data.salary_range.name)}</div>` : ''}
+                            ${data.salary_range_from || data.salary_range_to ? `<div class="text-muted fs-8">Range: ${escapeHtml(data.salary_range_from || '')} - ${escapeHtml(data.salary_range_to || '')}</div>` : ''}
+                            ${data.base_salary ? `<div class="text-muted fs-8">Base: ${data.currency || 'AUD'} ${Number(data.base_salary).toLocaleString()}</div>` : ''}
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -190,6 +186,7 @@ window.viewJob = function(id) {
                             <span class="text-muted d-block fs-7">Employment Type</span>
                             <span class="fw-bold">${escapeHtml(data.employment_type || 'N/A')}</span>
                             ${data.location_type ? `<div class="text-muted fs-8">${escapeHtml(data.location_type)}</div>` : ''}
+                            ${data.job_source ? `<div class="text-muted fs-8">Source: ${formatJobSource(data.job_source)}</div>` : ''}
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -197,6 +194,7 @@ window.viewJob = function(id) {
                             <span class="text-muted d-block fs-7">Work Hours</span>
                             <span class="fw-bold">${escapeHtml(data.work_hours || 'Not specified')}</span>
                             ${data.duration ? `<div class="text-muted fs-8">Duration: ${escapeHtml(data.duration)}</div>` : ''}
+                            ${data.applicant_location_requirements ? `<div class="text-muted fs-8">${escapeHtml(data.applicant_location_requirements)}</div>` : ''}
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -204,6 +202,12 @@ window.viewJob = function(id) {
                             <span class="text-muted d-block fs-7">Duty Station</span>
                             <span class="fw-bold">${escapeHtml(data.duty_station || 'N/A')}</span>
                             ${data.job_reference ? `<div class="text-muted fs-8">Ref: ${escapeHtml(data.job_reference)}</div>` : ''}
+                            ${data.job_type_legacy || data.job_status_legacy ? `
+                                <div class="text-muted fs-8">
+                                    ${data.job_type_legacy ? `Legacy Type: ${escapeHtml(data.job_type_legacy)}` : ''}
+                                    ${data.job_status_legacy ? ` | Legacy Status: ${escapeHtml(data.job_status_legacy)}` : ''}
+                                </div>
+                            ` : ''}
                         </div>
                     </div>
                 </div>
@@ -292,6 +296,30 @@ window.viewJob = function(id) {
                                         <span class="fw-bold fs-3">${data.google_rank || 'N/A'}</span>
                                     </div>
                                 </div>
+                                <div class="col-md-3 mt-3">
+                                    <div class="bg-light p-3 rounded text-center">
+                                        <span class="text-muted d-block fs-7">Search Impressions</span>
+                                        <span class="fw-bold fs-3 text-info">${data.search_impressions || 0}</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 mt-3">
+                                    <div class="bg-light p-3 rounded text-center">
+                                        <span class="text-muted d-block fs-7">Search Clicks</span>
+                                        <span class="fw-bold fs-3 text-success">${data.search_clicks || 0}</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 mt-3">
+                                    <div class="bg-light p-3 rounded text-center">
+                                        <span class="text-muted d-block fs-7">Social Shares</span>
+                                        <span class="fw-bold fs-3 text-primary">${data.social_shares || 0}</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 mt-3">
+                                    <div class="bg-light p-3 rounded text-center">
+                                        <span class="text-muted d-block fs-7">Backlinks</span>
+                                        <span class="fw-bold fs-3 text-warning">${data.backlinks_count || 0}</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -327,6 +355,12 @@ window.viewJob = function(id) {
                                     <div class="col-md-6 mt-2">
                                         <strong>Canonical URL:</strong>
                                         <div class="bg-light p-2 rounded">${escapeHtml(data.canonical_url)}</div>
+                                    </div>
+                                ` : ''}
+                                ${data.seo_synonyms ? `
+                                    <div class="col-md-12 mt-2">
+                                        <strong>SEO Synonyms:</strong>
+                                        <div class="bg-light p-2 rounded">${escapeHtml(data.seo_synonyms)}</div>
                                     </div>
                                 ` : ''}
                             </div>
@@ -390,7 +424,18 @@ window.viewJob = function(id) {
                     </div>
                 ` : ''}
 
-                <!-- Legacy & Timestamps -->
+                ${data.ai_content_analysis ? `
+                    <div class="row mb-5">
+                        <div class="col-12">
+                            <div class="border rounded p-4">
+                                <span class="text-muted d-block fs-7 mb-2">AI Content Analysis</span>
+                                <div class="bg-light p-3 rounded" style="max-height: 150px; overflow-y: auto;">${escapeHtml(data.ai_content_analysis)}</div>
+                            </div>
+                        </div>
+                    </div>
+                ` : ''}
+
+                <!-- Legacy & System Information -->
                 <div class="row g-5 mb-7">
                     <div class="col-md-12">
                         <div class="border rounded p-4">
@@ -409,8 +454,24 @@ window.viewJob = function(id) {
                                     <span class="d-block">${data.legacy_company_id || 'N/A'}</span>
                                 </div>
                                 <div class="col-md-3">
+                                    <strong>Legacy UID:</strong>
+                                    <span class="d-block">${data.legacy_uid || 'N/A'}</span>
+                                </div>
+                                <div class="col-md-3 mt-2">
                                     <strong>Experience Months:</strong>
                                     <span class="d-block">${data.experience_months || 0}</span>
+                                </div>
+                                <div class="col-md-3 mt-2">
+                                    <strong>Job Source:</strong>
+                                    <span class="d-block">${jobSourceBadge}</span>
+                                </div>
+                                <div class="col-md-3 mt-2">
+                                    <strong>Legacy Job Type:</strong>
+                                    <span class="d-block">${escapeHtml(data.job_type_legacy || 'N/A')}</span>
+                                </div>
+                                <div class="col-md-3 mt-2">
+                                    <strong>Legacy Job Status:</strong>
+                                    <span class="d-block">${escapeHtml(data.job_status_legacy || 'N/A')}</span>
                                 </div>
                             </div>
                         </div>
@@ -436,6 +497,10 @@ window.viewJob = function(id) {
                                     <span class="d-block">${data.published_at ? formatDate(data.published_at) : 'Not published'}</span>
                                 </div>
                                 <div class="col-md-3">
+                                    <strong>Published Until:</strong>
+                                    <span class="d-block">${data.published_until ? formatDate(data.published_until) : 'Not set'}</span>
+                                </div>
+                                <div class="col-md-3 mt-2">
                                     <strong>Deadline:</strong>
                                     <span class="d-block ${data.deadline && new Date(data.deadline) < new Date() ? 'text-danger' : ''}">${formatDateOnly(data.deadline)}</span>
                                     ${data.days_remaining !== null ? `<span class="text-muted fs-8">${data.days_remaining >= 0 ? data.days_remaining + ' days remaining' : 'Expired'}</span>` : ''}
@@ -449,6 +514,10 @@ window.viewJob = function(id) {
                                     <span class="d-block">${data.migrated_at ? formatDate(data.migrated_at) : 'Not migrated'}</span>
                                 </div>
                                 <div class="col-md-3 mt-2">
+                                    <strong>Deleted:</strong>
+                                    <span class="d-block">${data.deleted_at ? formatDate(data.deleted_at) : 'Not deleted'}</span>
+                                </div>
+                                <div class="col-md-3 mt-2">
                                     <strong>Last Pinged:</strong>
                                     <span class="d-block">${data.last_pinged_at ? formatDate(data.last_pinged_at) : 'Never'}</span>
                                 </div>
@@ -460,31 +529,6 @@ window.viewJob = function(id) {
                         </div>
                     </div>
                 </div>
-
-                <!-- Social Metrics -->
-                ${data.social_shares !== undefined || data.backlinks_count !== undefined ? `
-                    <div class="row g-5 mb-7">
-                        <div class="col-md-12">
-                            <div class="border rounded p-4">
-                                <span class="text-muted d-block fs-7">Social & Backlink Metrics</span>
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <strong>Social Shares:</strong>
-                                        <span class="d-block">${data.social_shares || 0}</span>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <strong>Backlinks:</strong>
-                                        <span class="d-block">${data.backlinks_count || 0}</span>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <strong>Search Impressions:</strong>
-                                        <span class="d-block">${data.search_impressions || 0}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                ` : ''}
 
                 <!-- AI Optimization -->
                 ${data.ai_optimized_title || data.ai_optimized_description || data.ai_recommendations ? `
@@ -510,6 +554,61 @@ window.viewJob = function(id) {
                                         <div class="bg-light p-2 rounded">${escapeHtml(data.ai_recommendations)}</div>
                                     </div>
                                 ` : ''}
+                                ${data.ai_content_analysis ? `
+                                    <div class="mt-2">
+                                        <strong>AI Content Analysis:</strong>
+                                        <div class="bg-light p-2 rounded" style="max-height: 100px; overflow-y: auto;">${escapeHtml(data.ai_content_analysis)}</div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                ` : ''}
+
+                <!-- Structured Data -->
+                ${data.structured_data ? `
+                    <div class="row g-5 mb-7">
+                        <div class="col-md-12">
+                            <div class="border rounded p-4">
+                                <span class="text-muted d-block fs-7">Structured Data</span>
+                                <div class="bg-light p-2 rounded" style="max-height: 150px; overflow-y: auto; font-size: 12px;">
+                                    <pre style="white-space: pre-wrap; word-wrap: break-word;">${escapeHtml(JSON.stringify(data.structured_data, null, 2))}</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ` : ''}
+
+                <!-- Search Terms & Competitor Analysis -->
+                ${data.search_terms || data.competitor_analysis ? `
+                    <div class="row g-5 mb-7">
+                        <div class="col-md-12">
+                            <div class="border rounded p-4">
+                                <span class="text-muted d-block fs-7">Search & Competitor Data</span>
+                                ${data.search_terms ? `
+                                    <div class="mb-2">
+                                        <strong>Search Terms:</strong>
+                                        <div class="bg-light p-2 rounded">${escapeHtml(JSON.stringify(data.search_terms))}</div>
+                                    </div>
+                                ` : ''}
+                                ${data.competitor_analysis ? `
+                                    <div>
+                                        <strong>Competitor Analysis:</strong>
+                                        <div class="bg-light p-2 rounded">${escapeHtml(JSON.stringify(data.competitor_analysis))}</div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                ` : ''}
+
+                <!-- Ranking Keywords -->
+                ${data.ranking_keywords ? `
+                    <div class="row g-5 mb-7">
+                        <div class="col-md-12">
+                            <div class="border rounded p-4">
+                                <span class="text-muted d-block fs-7">Ranking Keywords</span>
+                                <div class="bg-light p-2 rounded">${escapeHtml(JSON.stringify(data.ranking_keywords))}</div>
                             </div>
                         </div>
                     </div>

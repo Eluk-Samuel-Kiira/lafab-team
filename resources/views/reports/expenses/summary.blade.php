@@ -352,7 +352,7 @@
                         Showing {{ $expenses->firstItem() ?? 0 }} to {{ $expenses->lastItem() ?? 0 }} of {{ $expenses->total() }} entries
                     </div>
                     <div>
-                        {{ $expenses->appends(request()->except('page'))->links() }}
+                        {{ $expenses->appends(request()->except('page'))->links('pagination::bootstrap-5') }}
                     </div>
                 </div>
             </div>

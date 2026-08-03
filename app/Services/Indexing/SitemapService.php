@@ -493,15 +493,15 @@ class SitemapService
         // $appEnv = config('app.env');
         // $isLocal = in_array($appEnv, ['local', 'development', 'testing']);
         
-        if ($isLocal) {
-            Log::info("Skipping search engine ping in {$appEnv} environment for country {$countryCode}");
-            return [
-                'status' => 'skipped',
-                'message' => "Ping skipped in {$appEnv} environment",
-                'environment' => $appEnv,
-                'country' => $countryCode,
-            ];
-        }
+        // if ($isLocal) {
+        //     Log::info("Skipping search engine ping in {$appEnv} environment for country {$countryCode}");
+        //     return [
+        //         'status' => 'skipped',
+        //         'message' => "Ping skipped in {$appEnv} environment",
+        //         'environment' => $appEnv,
+        //         'country' => $countryCode,
+        //     ];
+        // }
 
         // ✅ STEP 1: Update ALL unpinged active jobs in this country
         try {

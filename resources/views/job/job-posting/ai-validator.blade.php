@@ -25,6 +25,7 @@
         salary_amount: 'Salary Amount',
         currency: 'Currency',
         payment_period: 'Payment Period',
+        job_source: 'Job Source',
         meta_title: 'Meta Title',
         meta_description: 'Meta Description',
         keywords: 'Keywords',

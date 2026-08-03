@@ -212,7 +212,7 @@ class SitemapController extends Controller
                 'ping_status' => isset($pingResults['status']) ? $pingResults['status'] : 'success',
             ]);
         } catch (\Exception $e) {
-            Log::error('Ping jobs failed: ' . $e->getMessage(), [
+            \Log::error('Ping jobs failed: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
             ]);
             

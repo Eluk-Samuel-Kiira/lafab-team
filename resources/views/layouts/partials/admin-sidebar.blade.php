@@ -104,7 +104,7 @@
                     @endcan
 
                     {{-- Jobs Index --}}
-                    @can('create jobs')
+                    @can('view jobs')
                     <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.companies*', 'admin.job-locations*', 'admin.job-posts*', 'admin.job-applications*', 'admin.sitemap*') ? 'show here' : '' }}">
                         <span class="menu-link">
                             <span class="menu-icon">
@@ -315,11 +315,12 @@
                     @endcanany
 
                     {{-- Reports --}}
-                    @canany(['view financial reports', 'view expense reports'])
+                    @canany(['view financial reports', 'view expense reports', 'view jobs reports', 'view job performance', 'view job seo', 'view job trends'])
                     <div data-kt-menu-trigger="click" class="menu-item menu-accordion 
                         {{ request()->routeIs(
                             'accounting.*',
-                            'admin.expense-reports*'
+                            'admin.expense-reports*',
+                            'admin.jobs-reports*'
                         ) ? 'show here' : '' }}">
                         <span class="menu-link">
                             <span class="menu-icon">
@@ -335,7 +336,7 @@
                         <div class="menu-sub menu-sub-accordion">
                             
                             {{-- Financial Reports Submenu --}}
-                            @can('view financial reports')
+                            @canany(['view payment methods', 'view account balances', 'view transaction ledger', 'view income statement', 'view cash flow', 'view flexible reports'])
                             <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('accounting.payment-methods*', 'accounting.account-balances*', 
                                 'accounting.account-balances*', 'accounting.transaction-ledger*', 'accounting.income-statement*', 'accounting.cash-flow*',
                                 'accounting.transaction-ledger*','accounting.flexible-report*') ? 'show here' : '' }}">
@@ -395,10 +396,12 @@
                                     @endcan
                                 </div>
                             </div>
-                            @endcan
+                            @endcanany
 
                             {{-- Expense Reports Submenu --}}
-                            @can('view expense reports')
+                            @canany(['view expense reports', 'view expense summary', 'view expense by category', 'view expense by vendor', 
+                                    'view expense by employee', 'view expense by payment method', 'view expense trends', 
+                                    'view recurring expenses', 'view tax reports', 'view budget vs actual', 'view audit trail'])
                             <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.expense-reports*') ? 'show here' : '' }}">
                                 <span class="menu-link">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
@@ -496,8 +499,119 @@
                                     @endcan
                                 </div>
                             </div>
-                            @endcan
+                            @endcanany
                             
+                            {{-- Jobs Reports Submenu --}}
+                            @canany(['view jobs reports', 'view job summary', 'view job category report', 'view job company report', 
+                                    'view job location report', 'view job source report', 'view job performance', 'view job timeline',
+                                    'view job seo', 'view job trends', 'view job poster report', 'view job country report'])
+                            <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.jobs-reports*') ? 'show here' : '' }}">
+                                <span class="menu-link">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">Jobs Reports</span>
+                                    <span class="menu-arrow"></span>
+                                </span>
+                                <div class="menu-sub menu-sub-accordion">
+                                    @can('view jobs reports')
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.jobs-reports') ? 'active' : '' }}" href="{{ route('admin.jobs-reports') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Dashboard</span>
+                                        </a>
+                                    </div>
+                                    @endcan
+                                    @can('view job summary')
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.jobs-reports.summary') ? 'active' : '' }}" href="{{ route('admin.jobs-reports.summary') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Summary</span>
+                                        </a>
+                                    </div>
+                                    @endcan
+                                    @can('view job poster report')
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.jobs-reports.poster') ? 'active' : '' }}" href="{{ route('admin.jobs-reports.poster') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">By Poster</span>
+                                        </a>
+                                    </div>
+                                    @endcan
+                                    @can('view job timeline')
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.jobs-reports.timeline') ? 'active' : '' }}" href="{{ route('admin.jobs-reports.timeline') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Timeline</span>
+                                        </a>
+                                    </div>
+                                    @endcan
+                                    @can('view job country report')
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.jobs-reports.country') ? 'active' : '' }}" href="{{ route('admin.jobs-reports.country') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">By Country</span>
+                                        </a>
+                                    </div>
+                                    @endcan
+                                    @can('view job category report')
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.jobs-reports.category') ? 'active' : '' }}" href="{{ route('admin.jobs-reports.category') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">By Category</span>
+                                        </a>
+                                    </div>
+                                    @endcan
+                                    @can('view job company report')
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.jobs-reports.company') ? 'active' : '' }}" href="{{ route('admin.jobs-reports.company') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">By Company</span>
+                                        </a>
+                                    </div>
+                                    @endcan
+                                    @can('view job location report')
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.jobs-reports.location') ? 'active' : '' }}" href="{{ route('admin.jobs-reports.location') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">By Location</span>
+                                        </a>
+                                    </div>
+                                    @endcan
+                                    @can('view job source report')
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.jobs-reports.source') ? 'active' : '' }}" href="{{ route('admin.jobs-reports.source') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">By Source</span>
+                                        </a>
+                                    </div>
+                                    @endcan
+                                    @can('view job performance')
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.jobs-reports.performance') ? 'active' : '' }}" href="{{ route('admin.jobs-reports.performance') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Performance</span>
+                                        </a>
+                                    </div>
+                                    @endcan
+                                    @can('view job seo')
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.jobs-reports.seo') ? 'active' : '' }}" href="{{ route('admin.jobs-reports.seo') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">SEO Report</span>
+                                        </a>
+                                    </div>
+                                    @endcan
+                                    @can('view job trends')
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.jobs-reports.trends') ? 'active' : '' }}" href="{{ route('admin.jobs-reports.trends') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Trends</span>
+                                        </a>
+                                    </div>
+                                    @endcan
+                                </div>
+                            </div>
+                            @endcanany
+                                            
                         </div>
                     </div>
                     @endcanany
@@ -556,7 +670,9 @@
                     @endcanany
 
                     {{-- Settings --}}
-                    @canany(['view currencies', 'view payment methods', 'view payment sources', 'view payment purposes', 'view departments'])
+                    @canany(['view currencies', 'view payment methods', 'view payment sources', 'view payment purposes', 'view departments', 
+                            'view job industries', 'view job categories', 'view salary ranges', 'view education levels', 
+                            'view experience levels', 'view job types'])
                     <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.currencies*', 'admin.payment-methods*', 
                         'admin.payment-sources*', 'admin.payment-purposes*', 'admin.departments*','admin.salary-ranges*', 'admin.education-levels*',
                         'admin.experience-levels*', 'admin.job-types*', 'admin.job-categories*', 'admin.industries*') ? 'show here' : '' }}">
@@ -573,8 +689,7 @@
                             
                             {{-- Financial Settings Submenu --}}
                             @canany(['view currencies', 'view payment methods', 'view payment sources', 'view payment purposes'])
-                            <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.currencies*','admin.payment-methods',
-                                'admin.payment-methods*', 'admin.payment-sources*','admin.payment-purposes*') ? 'show here' : '' }}">
+                            <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.currencies*','admin.payment-methods*', 'admin.payment-sources*','admin.payment-purposes*') ? 'show here' : '' }}">
                                 <span class="menu-link">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                     <span class="menu-title">Financial Settings</span>
@@ -618,13 +733,13 @@
                             @endcanany
                             
                             {{-- Organization Settings --}}
+                            @can('view departments')
                             <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.departments*') ? 'show here' : '' }}">
                                 <span class="menu-link">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                     <span class="menu-title">Organization</span>
                                     <span class="menu-arrow"></span>
                                 </span>
-                                @can('view departments')
                                 <div class="menu-sub menu-sub-accordion">
                                     <div class="menu-item">
                                         <a class="menu-link {{ request()->routeIs('admin.departments*') ? 'active' : '' }}" href="{{ route('admin.departments') }}">
@@ -633,63 +748,72 @@
                                         </a>
                                     </div>
                                 </div>
-                                @endcan
                             </div>
+                            @endcan
                             
                             {{-- Job Settings --}}
+                            @canany(['view job industries', 'view job categories', 'view salary ranges', 'view education levels', 
+                                    'view experience levels', 'view job types'])
                             <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.salary-ranges*', 'admin.education-levels*',
-                                'admin.experience-levels*', 'admin.job-types*', 'admin.job-categories*', 'admin.industries*', ) ? 'show here' : '' }}">
+                                'admin.experience-levels*', 'admin.job-types*', 'admin.job-categories*', 'admin.industries*') ? 'show here' : '' }}">
                                 <span class="menu-link">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                     <span class="menu-title">Job Settings</span>
                                     <span class="menu-arrow"></span>
                                 </span>
                                 <div class="menu-sub menu-sub-accordion">
-                                    <!-- Industries -->
+                                    @can('view job industries')
                                     <div class="menu-item">
                                         <a class="menu-link {{ request()->routeIs('admin.industries*') ? 'active' : '' }}" href="{{ route('admin.industries') }}">
                                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                             <span class="menu-title">Industries</span>
                                         </a>
                                     </div>
-                                    <!-- Job Categories -->
+                                    @endcan
+                                    @can('view job categories')
                                     <div class="menu-item">
                                         <a class="menu-link {{ request()->routeIs('admin.job-categories*') ? 'active' : '' }}" href="{{ route('admin.job-categories') }}">
                                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                             <span class="menu-title">Job Categories</span>
                                         </a>
                                     </div>
-                                    <!-- Salary Ranges -->
+                                    @endcan
+                                    @can('view salary ranges')
                                     <div class="menu-item">
                                         <a class="menu-link {{ request()->routeIs('admin.salary-ranges*') ? 'active' : '' }}" href="{{ route('admin.salary-ranges') }}">
                                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                             <span class="menu-title">Salary Ranges</span>
                                         </a>
                                     </div>
-                                    <!-- Education Levels -->
+                                    @endcan
+                                    @can('view education levels')
                                     <div class="menu-item">
                                         <a class="menu-link {{ request()->routeIs('admin.education-levels*') ? 'active' : '' }}" href="{{ route('admin.education-levels') }}">
                                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                             <span class="menu-title">Education Levels</span>
                                         </a>
                                     </div>
-                                    <!-- Experience Levels -->
+                                    @endcan
+                                    @can('view experience levels')
                                     <div class="menu-item">
                                         <a class="menu-link {{ request()->routeIs('admin.experience-levels*') ? 'active' : '' }}" href="{{ route('admin.experience-levels') }}">
                                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                             <span class="menu-title">Experience Levels</span>
                                         </a>
                                     </div>
-                                    <!-- Job Types -->
+                                    @endcan
+                                    @can('view job types')
                                     <div class="menu-item">
                                         <a class="menu-link {{ request()->routeIs('admin.job-types*') ? 'active' : '' }}" href="{{ route('admin.job-types') }}">
                                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                             <span class="menu-title">Job Types</span>
                                         </a>
                                     </div>
+                                    @endcan
                                 </div>
                             </div>
-                                                        
+                            @endcanany
+                                            
                         </div>
                     </div>
                     @endcanany

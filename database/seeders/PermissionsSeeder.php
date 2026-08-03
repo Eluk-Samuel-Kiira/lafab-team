@@ -85,6 +85,22 @@ class PermissionsSeeder extends Seeder
             'bulk process applications',
 
             // ============================================================
+            // JOBS REPORTS PERMISSIONS
+            // ============================================================
+            'view jobs reports',
+            'view job summary',
+            'view job timeline',
+            'view job category report',
+            'view job company report',
+            'view job location report',
+            'view job source report',
+            'view job performance',
+            'view job seo',
+            'view job trends',
+            'view job country report',
+            'view job poster report',
+
+            // ============================================================
             // CANDIDATES / JOB SEEKERS
             // ============================================================
             'view candidates',

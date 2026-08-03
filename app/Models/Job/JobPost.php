@@ -56,6 +56,7 @@ class JobPost extends Model
         'salary_amount',
         'currency',
         'payment_period',
+        'job_source',
         'base_salary',
         'salary_range_from',
         'salary_range_to',

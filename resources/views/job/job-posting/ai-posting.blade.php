@@ -708,6 +708,19 @@
                                 <option value="hourly">Hourly</option>
                             </select>
                         </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Job Source</label>
+                            <select name="job_source" id="f_job_source" class="form-select" required>
+                                <option value="">— Select —</option>
+                                <option value="competitor_website">Competitor Website</option>
+                                <option value="whatsapp">WhatsApp</option>
+                                <option value="newspaper">Newspaper</option>
+                                <option value="employer_website">Employer Website</option>
+                                <option value="linkedin">LinkedIn</option>
+                                <option value="facebook">Facebook</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
             </div>
