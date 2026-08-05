@@ -62,42 +62,89 @@ class JobsReportsController extends Controller
         // Summary statistics
         $summary = $this->getSummaryStatistics($startDate, $endDate, $countryCode);
         
-        // Monthly trends
+        // Monthly trends - ensure data is returned as array
         $monthlyTrends = $this->getMonthlyTrends($startDate, $endDate, $countryCode);
         
-        // Top categories
-        $topCategories = $this->getTopCategories($startDate, $endDate, 10, $countryCode);
+        // ✅ Convert monthly trends to a simple array for chart
+        $chartData = [
+            'labels' => array_values(array_map(function($item) {
+                return $item['month_label'];
+            }, $monthlyTrends)),
+            'counts' => array_values(array_map(function($item) {
+                return $item['count'];
+            }, $monthlyTrends)),
+            'views' => array_values(array_map(function($item) {
+                return $item['views'];
+            }, $monthlyTrends)),
+            'applications' => array_values(array_map(function($item) {
+                return $item['applications'];
+            }, $monthlyTrends)),
+        ];
         
-        // Top companies
-        $topCompanies = $this->getTopCompanies($startDate, $endDate, 10, $countryCode);
+        // Top categories with pagination
+        $topCategories = $this->getTopCategoriesPaginated($startDate, $endDate, $perPage, $countryCode);
+        
+        // Top companies with pagination
+        $topCompanies = $this->getTopCompaniesPaginated($startDate, $endDate, $perPage, $countryCode);
         
         // Status breakdown
         $statusBreakdown = $this->getStatusBreakdown($startDate, $endDate, $countryCode);
-        
-        // Recent jobs with pagination
-        $recentJobs = JobPost::with(['company', 'jobCategory', 'jobLocation', 'jobType', 'poster'])
-            ->whereBetween('job_posts.created_at', [$startDate, $endDate])
-            ->when($countryCode, function($q) use ($countryCode) {
-                $q->where('country_code', $countryCode);
-            })
-            ->orderBy('job_posts.created_at', 'desc')
-            ->paginate($perPage);
         
         $countries = $this->getCountries();
         
         return view('reports.jobs.index', compact(
             'summary',
             'monthlyTrends',
+            'chartData',
             'topCategories',
             'topCompanies',
             'statusBreakdown',
-            'recentJobs',
             'startDate',
             'endDate',
             'perPage',
             'countries',
             'countryCode'
         ));
+    }
+
+    /**
+     * Get top categories with pagination
+     */
+    private function getTopCategoriesPaginated($startDate, $endDate, $perPage = 10, $countryCode = null)
+    {
+        return JobPost::whereBetween('job_posts.created_at', [$startDate, $endDate])
+            ->join('job_categories', 'job_posts.job_category_id', '=', 'job_categories.id')
+            ->when($countryCode, function($q) use ($countryCode) {
+                $q->where('job_posts.country_code', $countryCode);
+            })
+            ->select(
+                'job_categories.name as category_name',
+                DB::raw('COUNT(*) as count'),
+                DB::raw('SUM(job_posts.view_count) as views')
+            )
+            ->groupBy('job_categories.name')
+            ->orderBy('count', 'desc')
+            ->paginate($perPage, ['*'], 'category_page');
+    }
+
+    /**
+     * Get top companies with pagination
+     */
+    private function getTopCompaniesPaginated($startDate, $endDate, $perPage = 10, $countryCode = null)
+    {
+        return JobPost::whereBetween('job_posts.created_at', [$startDate, $endDate])
+            ->join('companies', 'job_posts.company_id', '=', 'companies.id')
+            ->when($countryCode, function($q) use ($countryCode) {
+                $q->where('job_posts.country_code', $countryCode);
+            })
+            ->select(
+                'companies.name as company_name',
+                DB::raw('COUNT(*) as count'),
+                DB::raw('SUM(job_posts.view_count) as views')
+            )
+            ->groupBy('companies.name')
+            ->orderBy('count', 'desc')
+            ->paginate($perPage, ['*'], 'company_page');
     }
 
     /**
@@ -120,7 +167,7 @@ class JobsReportsController extends Controller
         $status = $request->get('status');
         $posterId = $request->get('poster_id');
         $countryCode = $request->get('country_code');
-        $perPage = $request->get('per_page', 20);
+        $perPage = $request->get('per_page', 10);
         
         // ✅ Convert dates to proper datetime range
         $startDateTime = Carbon::parse($startDate)->startOfDay();
@@ -192,12 +239,31 @@ class JobsReportsController extends Controller
             $query->where('country_code', $countryCode);
         }
         
-        // Get paginated jobs
-        $jobs = $query->orderBy('job_posts.created_at', 'desc')->paginate($perPage);
-        
-        // Get all jobs for summary (without pagination)
+        // Get all jobs for summary (without pagination) - for daily trend data and summary stats
         $allJobs = clone $query;
         $allJobs = $allJobs->get();
+        
+        // ================================================================
+        // DAILY TREND DATA FOR LINE CHART
+        // ================================================================
+        $dailyTrendData = $allJobs->groupBy(function($job) {
+            return $job->created_at->format('Y-m-d');
+        })->map(function($items, $date) {
+            return [
+                'date' => $date,
+                'date_formatted' => Carbon::parse($date)->format('M d, Y'),
+                'count' => $items->count(),
+                'views' => $items->sum('view_count'),
+                'applications' => $items->sum('application_count'),
+                'clicks' => $items->sum('click_count'),
+            ];
+        })->values()->sortBy('date');
+        
+        // Prepare data for chart
+        $chartLabels = $dailyTrendData->pluck('date_formatted')->toArray();
+        $chartCounts = $dailyTrendData->pluck('count')->toArray();
+        $chartViews = $dailyTrendData->pluck('views')->toArray();
+        $chartApplications = $dailyTrendData->pluck('applications')->toArray();
         
         // Summary statistics
         $summary = [
@@ -215,23 +281,18 @@ class JobsReportsController extends Controller
             'pinged_jobs' => $allJobs->where('is_pinged', true)->count(),
             'indexed_jobs' => $allJobs->where('is_indexed', true)->count(),
             'expired_jobs' => $allJobs->where('deadline', '<', now())->count(),
+            'peak_daily_posts' => $dailyTrendData->max('count') ?? 0,
+            'avg_daily_posts' => $dailyTrendData->count() > 0 ? $dailyTrendData->avg('count') : 0,
         ];
         
-        // Daily breakdown
-        $dailyBreakdown = $allJobs->groupBy(function($job) {
-            return $job->created_at->format('Y-m-d');
-        })->map(function($items, $date) {
-            return [
-                'date' => $date,
-                'date_formatted' => Carbon::parse($date)->format('M d, Y'),
-                'count' => $items->count(),
-                'views' => $items->sum('view_count'),
-                'applications' => $items->sum('application_count'),
-                'clicks' => $items->sum('click_count'),
-            ];
-        })->values()->sortBy('date');
+        // ================================================================
+        // DAILY BREAKDOWN WITH PAGINATION
+        // ================================================================
+        $dailyBreakdown = $this->paginateCollection($dailyTrendData, $perPage, 'daily_page');
         
-        // Category breakdown
+        // ================================================================
+        // CATEGORY BREAKDOWN WITH PAGINATION
+        // ================================================================
         $categoryData = [];
         foreach ($allJobs as $job) {
             $catId = $job->job_category_id;
@@ -253,8 +314,11 @@ class JobsReportsController extends Controller
         }
         
         $categoryBreakdown = collect($categoryData)->sortByDesc('count')->values();
+        $categoryBreakdown = $this->paginateCollection($categoryBreakdown, $perPage, 'category_page');
         
-        // Company breakdown
+        // ================================================================
+        // COMPANY BREAKDOWN WITH PAGINATION
+        // ================================================================
         $companyData = [];
         foreach ($allJobs as $job) {
             $compId = $job->company_id;
@@ -276,8 +340,11 @@ class JobsReportsController extends Controller
         }
         
         $companyBreakdown = collect($companyData)->sortByDesc('count')->values();
+        $companyBreakdown = $this->paginateCollection($companyBreakdown, $perPage, 'company_page');
         
-        // Job Source breakdown
+        // ================================================================
+        // SOURCE BREAKDOWN WITH PAGINATION
+        // ================================================================
         $sourceData = [];
         foreach ($allJobs as $job) {
             $source = $job->job_source ?? 'Not specified';
@@ -297,8 +364,11 @@ class JobsReportsController extends Controller
         }
         
         $sourceBreakdown = collect($sourceData)->sortByDesc('count')->values();
+        $sourceBreakdown = $this->paginateCollection($sourceBreakdown, $perPage, 'source_page');
         
-        // Location breakdown
+        // ================================================================
+        // LOCATION BREAKDOWN WITH PAGINATION
+        // ================================================================
         $locationData = [];
         foreach ($allJobs as $job) {
             $locId = $job->job_location_id;
@@ -320,8 +390,11 @@ class JobsReportsController extends Controller
         }
         
         $locationBreakdown = collect($locationData)->sortByDesc('count')->values();
+        $locationBreakdown = $this->paginateCollection($locationBreakdown, $perPage, 'location_page');
         
-        // Status breakdown
+        // ================================================================
+        // STATUS BREAKDOWN (no pagination needed as it's always small)
+        // ================================================================
         $statusData = [
             'active' => ['status' => 'active', 'label' => 'Active', 'count' => 0, 'views' => 0],
             'inactive' => ['status' => 'inactive', 'label' => 'Inactive', 'count' => 0, 'views' => 0],
@@ -380,7 +453,6 @@ class JobsReportsController extends Controller
         $countries = $this->getCountries();
         
         return view('reports.jobs.summary', compact(
-            'jobs',
             'summary',
             'dailyBreakdown',
             'categoryBreakdown',
@@ -410,10 +482,32 @@ class JobsReportsController extends Controller
             'status',
             'posterId',
             'countryCode',
-            'perPage'
+            'perPage',
+            'chartLabels',
+            'chartCounts',
+            'chartViews',
+            'chartApplications'
         ));
     }
 
+    /**
+     * Paginate a collection manually
+     */
+    private function paginateCollection($collection, $perPage, $pageName = 'page')
+    {
+        $page = request()->get($pageName, 1);
+        $offset = ($page - 1) * $perPage;
+        $items = $collection->slice($offset, $perPage)->values();
+        
+        return new \Illuminate\Pagination\LengthAwarePaginator(
+            $items,
+            $collection->count(),
+            $perPage,
+            $page,
+            ['path' => request()->url(), 'pageName' => $pageName, 'query' => request()->query()]
+        );
+    }
+    
     /**
      * Jobs by Category Report
      */
@@ -1232,6 +1326,111 @@ class JobsReportsController extends Controller
             'countryCode',
             'perPage'
         ));
+    }
+
+    /**
+     * Get poster activity by time of day - Multi-poster line graph
+     */
+    public function getPosterActivity(Request $request)
+    {
+        $startDate = $request->get('start_date', Carbon::now()->startOfYear()->format('Y-m-d'));
+        $endDate = $request->get('end_date', Carbon::now()->format('Y-m-d'));
+        $posterId = $request->get('poster_id');
+        $countryCode = $request->get('country_code');
+        
+        $startDateTime = Carbon::parse($startDate)->startOfDay();
+        $endDateTime = Carbon::parse($endDate)->endOfDay();
+        
+        // Get all posters with their jobs
+        $query = JobPost::whereBetween('job_posts.created_at', [$startDateTime, $endDateTime])
+            ->join('users', 'job_posts.poster_id', '=', 'users.id')
+            ->select(
+                'job_posts.id',
+                'job_posts.created_at',
+                'users.id as poster_id',
+                'users.name as poster_name',
+                DB::raw('HOUR(job_posts.created_at) as hour')
+            )
+            ->orderBy('job_posts.created_at', 'asc');
+        
+        if ($posterId) {
+            $query->where('poster_id', $posterId);
+        }
+        
+        if ($countryCode) {
+            $query->where('job_posts.country_code', $countryCode);
+        }
+        
+        $jobs = $query->get();
+        
+        // Get all unique posters
+        $posters = $jobs->groupBy('poster_id')->map(function($items, $key) {
+            return [
+                'id' => $key,
+                'name' => $items->first()->poster_name,
+            ];
+        })->values();
+        
+        // Get date range for labels (hourly)
+        $labels = [];
+        $currentHour = $startDateTime->copy()->startOfHour();
+        $endHour = $endDateTime->copy()->startOfHour();
+        
+        while ($currentHour <= $endHour) {
+            $labels[] = $currentHour->format('M d H:00');
+            $currentHour->addHour();
+        }
+        
+        // Build dataset for each poster
+        $posterDatasets = [];
+        $hourlyDistribution = array_fill(0, 24, 0);
+        
+        foreach ($posters as $poster) {
+            $posterJobs = $jobs->where('poster_id', $poster['id']);
+            $data = [];
+            
+            // Fill data for each hour
+            $currentHour = $startDateTime->copy()->startOfHour();
+            while ($currentHour <= $endHour) {
+                $hourCount = $posterJobs->filter(function($job) use ($currentHour) {
+                    return $job->created_at->format('Y-m-d H:00') == $currentHour->format('Y-m-d H:00');
+                })->count();
+                
+                $data[] = $hourCount;
+                $currentHour->addHour();
+            }
+            
+            $posterDatasets[] = [
+                'name' => $poster['name'],
+                'data' => $data,
+            ];
+        }
+        
+        // Calculate hourly distribution (aggregated)
+        foreach ($jobs as $job) {
+            $hour = (int)$job->hour;
+            $hourlyDistribution[$hour]++;
+        }
+        
+        $hourlyDistributionData = [];
+        for ($hour = 0; $hour < 24; $hour++) {
+            $hourlyDistributionData[] = [
+                'hour' => $hour,
+                'label' => date('g A', mktime($hour, 0, 0)),
+                'count' => $hourlyDistribution[$hour],
+            ];
+        }
+        
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'labels' => $labels,
+                'poster_datasets' => $posterDatasets,
+                'poster_count' => $posters->count(),
+                'total_posts' => $jobs->count(),
+                'hourly_distribution' => $hourlyDistributionData,
+            ]
+        ]);
     }
 
     /**

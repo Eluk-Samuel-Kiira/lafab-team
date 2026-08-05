@@ -177,14 +177,11 @@
                 </select>
                 <select class="form-select form-select-sm w-120px" id="countryFilter">
                     <option value="all">All Countries</option>
-                    <option value="AU">🇦🇺 Australia</option>
-                    <option value="UG">🇺🇬 Uganda</option>
-                    <option value="KE">🇰🇪 Kenya</option>
-                    <option value="TZ">🇹🇿 Tanzania</option>
-                    <option value="RW">🇷🇼 Rwanda</option>
-                    <option value="MW">🇲🇼 Malawi</option>
-                    <option value="ZM">🇿🇲 Zambia</option>
-                    <option value="SG">🇸🇬 Singapore</option>
+                    @foreach(\App\Helpers\CountryHelper::getCountriesWithFlags() as $country)
+                        <option value="{{ $country['code'] }}">
+                            {{ $country['flag'] }} {{ $country['name'] }}
+                        </option>
+                    @endforeach
                 </select>
                 <div class="position-relative">
                     <i class="ki-duotone ki-magnifier fs-3 position-absolute ms-4 top-50 translate-middle-y">
@@ -404,16 +401,10 @@ function loadCountryStats() {
                 const tbody = document.getElementById('countryStatsBody');
                 tbody.innerHTML = '';
                 
-                const countryNames = {
-                    'AU': '🇦🇺 Australia',
-                    'UG': '🇺🇬 Uganda',
-                    'KE': '🇰🇪 Kenya',
-                    'TZ': '🇹🇿 Tanzania',
-                    'RW': '🇷🇼 Rwanda',
-                    'MW': '🇲🇼 Malawi',
-                    'ZM': '🇿🇲 Zambia',
-                    'SG': '🇸🇬 Singapore'
-                };
+                    const countryNames = {};
+                    @foreach(\App\Helpers\CountryHelper::getCountriesWithFlags() as $country)
+                        countryNames['{{ $country['code'] }}'] = '{{ $country['flag'] }} {{ $country['name'] }}';
+                    @endforeach
                 
                 Object.keys(countries).forEach(code => {
                     const stat = countries[code];

@@ -545,11 +545,10 @@
             // For country code, show country name
             let displayVal = val;
             if (f.key === 'country_code' && val) {
-                const countryMap = {
-                    'AU': 'Australia 🇦🇺', 'UG': 'Uganda 🇺🇬', 'KE': 'Kenya 🇰🇪',
-                    'TZ': 'Tanzania 🇹🇿', 'RW': 'Rwanda 🇷🇼', 'MW': 'Malawi 🇲🇼',
-                    'ZM': 'Zambia 🇿🇲', 'SG': 'Singapore 🇸🇬'
-                };
+                    const countryMap = {};
+                    @foreach(\App\Helpers\CountryHelper::getCountriesWithFlags() as $country)
+                        countryMap['{{ $country['code'] }}'] = '{{ $country['name'] }} {{ $country['flag'] }}';
+                    @endforeach
                 displayVal = countryMap[val] || val;
             }
             

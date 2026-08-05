@@ -176,6 +176,53 @@
     </div>
 </div>
 
+<!-- Poster Activity Line Chart - Multi-Poster -->
+<div class="row g-5 g-xl-10 mb-5">
+    <div class="col-12">
+        <div class="card card-flush shadow-sm">
+            <div class="card-header py-3">
+                <h3 class="card-title fs-5 fw-bold">Poster Activity Over Time (Hourly)</h3>
+                <div class="card-toolbar">
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="badge badge-light-primary" id="totalPostsBadge">Total: --</span>
+                        <span class="badge badge-light-success" id="posterCountBadge">Posters: --</span>
+                        <span class="badge badge-light-info" id="dateRangeBadge">Range: --</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="posterActivityContainer">
+                    <div class="text-center py-5" id="activityLoading">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="mt-2 text-muted">Loading activity data...</p>
+                    </div>
+                    <canvas id="posterActivityChart" style="width: 100%; height: 400px; display: none;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hourly Distribution Heatmap -->
+<div class="row g-5 g-xl-10 mb-5">
+    <div class="col-12">
+        <div class="card card-flush shadow-sm">
+            <div class="card-header py-3">
+                <h3 class="card-title fs-5 fw-bold">24-Hour Posting Pattern</h3>
+                <div class="card-toolbar">
+                    <span class="badge badge-light-info">Shows when posters are most active</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="hourlyDistributionContainer">
+                    <canvas id="hourlyDistributionChart" style="width: 100%; height: 200px; display: none;"></canvas>
+                    <div class="text-center py-5 text-muted" id="hourlyLoading">Loading hourly data...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Earnings Bar Chart -->
 <div class="row g-5 g-xl-10 mb-5">
     <div class="col-12">
@@ -346,7 +393,6 @@
                                 <th>#</th>
                                 <th>Poster</th>
                                 <th>Email</th>
-                                <th>Job Title</th>
                                 <th class="text-center">Jobs</th>
                                 <th class="text-end">Views</th>
                                 <th class="text-end">Applications</th>
@@ -364,7 +410,6 @@
                                         <span class="fw-bold">{{ $item->poster_name }}</span>
                                     </td>
                                     <td>{{ $item->poster_email }}</td>
-                                    <td>{{ $item->poster_job_title ?? 'N/A' }}</td>
                                     <td class="text-center">
                                         <span class="badge badge-light-primary">{{ $item->job_count }}</span>
                                     </td>
@@ -422,5 +467,270 @@
         </div>
     </div>
 </div>
+
+<style>
+    /* Poster Activity Chart Styles */
+    #posterActivityChart {
+        max-height: 400px;
+    }
+    #hourlyDistributionChart {
+        max-height: 200px;
+    }
+</style>
+
+<script>
+// ================================================================
+// POSTER ACTIVITY CHART - MULTI-POSTER LINE GRAPH
+// ================================================================
+function loadPosterActivity() {
+    const container = document.getElementById('posterActivityContainer');
+    const loading = document.getElementById('activityLoading');
+    const canvas = document.getElementById('posterActivityChart');
+    const hourlyCanvas = document.getElementById('hourlyDistributionChart');
+    const hourlyLoading = document.getElementById('hourlyLoading');
+    
+    // Get current filter values
+    const form = document.querySelector('form');
+    const params = new URLSearchParams();
+    
+    if (form) {
+        form.querySelectorAll('select, input').forEach(field => {
+            if (field.name && field.value) {
+                params.append(field.name, field.value);
+            }
+        });
+    }
+    
+    const url = '{{ route("admin.jobs-reports.poster-activity") }}?' + params.toString();
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            loading.style.display = 'none';
+            hourlyLoading.style.display = 'none';
+            
+            if (data.success && data.data.labels.length > 0) {
+                // Show charts
+                canvas.style.display = 'block';
+                hourlyCanvas.style.display = 'block';
+                
+                // Update badges
+                document.getElementById('totalPostsBadge').textContent = 'Total: ' + data.data.total_posts + ' posts';
+                document.getElementById('dateRangeBadge').textContent = 'Range: ' + data.data.labels.length + ' hours';
+                document.getElementById('posterCountBadge').textContent = 'Posters: ' + data.data.poster_count;
+                
+                // ============================================================
+                // CHART 1: MULTI-POSTER LINE CHART
+                // ============================================================
+                const ctx = canvas.getContext('2d');
+                const colors = [
+                    '#009ef7', '#50cd89', '#f1416c', '#ffc700', '#7239ea',
+                    '#f6b100', '#1c4f8b', '#e37b3c', '#6f4e37', '#2e8b57',
+                    '#4169e1', '#dc143c', '#ff8c00', '#8b008b', '#2f4f4f'
+                ];
+                
+                const datasets = data.data.poster_datasets.map((poster, index) => {
+                    const color = colors[index % colors.length];
+                    return {
+                        label: poster.name,
+                        data: poster.data,
+                        borderColor: color,
+                        backgroundColor: color + '20',
+                        borderWidth: 2.5,
+                        fill: false,
+                        tension: 0.3,
+                        pointBackgroundColor: color,
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 7,
+                        spanGaps: true
+                    };
+                });
+                
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.data.labels,
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    font: {
+                                        size: 11,
+                                        weight: '600'
+                                    },
+                                    padding: 15,
+                                    usePointStyle: true,
+                                    pointStyle: 'circle',
+                                    boxWidth: 12
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    title: function(context) {
+                                        return 'Hour: ' + context[0].label;
+                                    },
+                                    label: function(context) {
+                                        const label = context.dataset.label || '';
+                                        const value = context.raw || 0;
+                                        return label + ': ' + value + ' job' + (value !== 1 ? 's' : '');
+                                    },
+                                    footer: function(context) {
+                                        let total = 0;
+                                        context.forEach(item => {
+                                            total += item.raw || 0;
+                                        });
+                                        return 'Total: ' + total + ' jobs in this hour';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    maxRotation: 45,
+                                    minRotation: 0,
+                                    font: {
+                                        size: 9
+                                    }
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.05)'
+                                },
+                                ticks: {
+                                    stepSize: 1,
+                                    font: {
+                                        size: 10
+                                    }
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Number of Jobs Posted',
+                                    font: {
+                                        size: 11,
+                                        weight: '600'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                // ============================================================
+                // CHART 2: BAR CHART - Hourly Distribution (Aggregated)
+                // ============================================================
+                const hourlyCtx = hourlyCanvas.getContext('2d');
+                const hourlyData = data.data.hourly_distribution || [];
+                const hourlyLabels = hourlyData.map(item => item.label);
+                const hourlyCounts = hourlyData.map(item => item.count);
+                
+                new Chart(hourlyCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: hourlyLabels,
+                        datasets: [
+                            {
+                                label: 'Total Posts',
+                                data: hourlyCounts,
+                                backgroundColor: hourlyCounts.map(count => 
+                                    count > 0 ? 'rgba(0, 158, 247, 0.7)' : 'rgba(228, 230, 239, 0.5)'
+                                ),
+                                borderColor: hourlyCounts.map(count => 
+                                    count > 0 ? '#009ef7' : '#e4e6ef'
+                                ),
+                                borderWidth: 2,
+                                borderRadius: 4,
+                                barPercentage: 0.8,
+                                categoryPercentage: 0.9
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.raw || 0;
+                                        return label + ': ' + value + ' posts';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    maxRotation: 0,
+                                    minRotation: 0,
+                                    font: {
+                                        size: 9
+                                    }
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.05)'
+                                },
+                                ticks: {
+                                    stepSize: 1,
+                                    font: {
+                                        size: 9
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                
+            } else {
+                container.innerHTML = '<div class="text-center py-5 text-muted">No activity data available for the selected filters</div>';
+                document.getElementById('hourlyDistributionContainer').innerHTML = '<div class="text-center py-5 text-muted">No hourly data available</div>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading poster activity:', error);
+            loading.style.display = 'none';
+            hourlyLoading.style.display = 'none';
+            container.innerHTML = '<div class="text-center py-5 text-danger">Failed to load activity data</div>';
+        });
+}
+
+// Load activity on page load and when filters change
+document.addEventListener('DOMContentLoaded', function() {
+    // Load initial data
+    loadPosterActivity();
+    
+    // Reload when form is submitted
+    document.querySelector('form')?.addEventListener('submit', function(e) {
+        setTimeout(loadPosterActivity, 500);
+    });
+});
+</script>
+
 @endcan
 @endsection

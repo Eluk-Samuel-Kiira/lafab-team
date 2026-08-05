@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
+use App\Helpers\CountryHelper;
 
 class JobPost extends Model
 {
@@ -49,7 +50,7 @@ class JobPost extends Model
         'street_address',
         'city',
         'state',
-        'country',
+        'country_code',
         'zipcode',
         
         // Salary Information
@@ -224,6 +225,14 @@ class JobPost extends Model
         return $this->hasMany(\App\Models\JobApplication::class);
     }
 
+    /**
+     * Get the country relationship
+     */
+    public function country()
+    {
+        return $this->belongsTo(Country::class, 'country_code', 'code');
+    }
+
     // Scopes
     public function scopeActive($query)
     {
@@ -255,6 +264,11 @@ class JobPost extends Model
         return $query->whereNull('migrated_at');
     }
 
+    public function scopeByCountry($query, $countryCode)
+    {
+        return $query->where('country_code', $countryCode);
+    }
+
     // Accessors
     public function getIsExpiredAttribute()
     {
@@ -283,31 +297,53 @@ class JobPost extends Model
         return now()->diffInDays($this->deadline, false);
     }
 
+    /**
+     * Get the country name
+     */
+    public function getCountryNameAttribute()
+    {
+        return CountryHelper::getCountryName($this->country_code);
+    }
 
     /**
-     * Get the URL for this job post
+     * Get the country flag
+     */
+    public function getCountryFlagAttribute()
+    {
+        return CountryHelper::getCountryFlag($this->country_code);
+    }
+
+    /**
+     * Get the URL for this job post using Country model
      */
     public function getUrlAttribute(): string
     {
-        $baseUrl = config('app.url');
-        $country = $this->country_code ?? 'AU';
-        
-        // Get country domain if available
-        $countryDomains = [
-            'AU' => 'greataustraliajobs.com',
-            'UG' => 'greatugandajobs.com',
-            'KE' => 'greatkenyanjobs.com',
-            'TZ' => 'greattanzaniajobs.com',
-            'RW' => 'greatrwandajobs.com',
-            'MW' => 'greatmalawijobs.com',
-            'ZM' => 'greatzambiajobs.com',
-            'SG' => 'greatsingaporejobs.com',
-        ];
+        return $this->generateUrl();
+    }
 
-        $domain = $countryDomains[$country] ?? parse_url($baseUrl, PHP_URL_HOST);
-        $scheme = parse_url($baseUrl, PHP_URL_SCHEME) ?: 'https';
+    /**
+     * Generate URL for this job post
+     */
+    public function generateUrl(?string $countryCode = null): string
+    {
+        $code = $countryCode ?? $this->country_code ?? 'AU';
         
-        // Use legacy URL structure if legacy_id exists
+        // Get country from database
+        $country = CountryHelper::getCountry($code);
+        
+        if ($country) {
+            // Use the frontend_url from country table
+            $frontendUrl = $country->frontend_url ?? $country->domain ?? config('app.url');
+            $scheme = parse_url($frontendUrl, PHP_URL_SCHEME) ?: 'https';
+            $domain = parse_url($frontendUrl, PHP_URL_HOST) ?? $frontendUrl;
+        } else {
+            // Fallback to app config
+            $frontendUrl = config('app.url');
+            $scheme = parse_url($frontendUrl, PHP_URL_SCHEME) ?: 'https';
+            $domain = parse_url($frontendUrl, PHP_URL_HOST) ?? $frontendUrl;
+        }
+        
+        // Generate URL based on whether it's a legacy job
         if ($this->legacy_id) {
             return "{$scheme}://{$domain}/jobs/legacy/{$this->legacy_id}/{$this->slug}";
         }
@@ -316,28 +352,74 @@ class JobPost extends Model
     }
 
     /**
-     * Get country-specific URL
+     * Get country-specific URL using country code
      */
     public function getCountryUrl(string $countryCode): string
     {
-        $countryDomains = [
-            'AU' => 'greataustraliajobs.com',
-            'UG' => 'greatugandajobs.com',
-            'KE' => 'greatkenyajobs.com',
-            'TZ' => 'greattanzaniajobs.com',
-            'RW' => 'greatrwandajobs.com',
-            'MW' => 'greatmalawijobs.com',
-            'ZM' => 'greatzambiajobs.com',
-            'SG' => 'greatsingaporejobs.com',
-        ];
+        return $this->generateUrl($countryCode);
+    }
 
-        $domain = $countryDomains[$countryCode] ?? parse_url(config('app.url'), PHP_URL_HOST);
-        $scheme = parse_url(config('app.url'), PHP_URL_SCHEME) ?: 'https';
+    /**
+     * Get the full URL with country domain
+     */
+    public function getFullUrlAttribute(): string
+    {
+        return $this->generateUrl();
+    }
+
+    /**
+     * Get canonical URL for SEO
+     */
+    public function getCanonicalUrlAttribute(): string
+    {
+        // Check if canonical_url is set in the attributes
+        if (!empty($this->attributes['canonical_url'])) {
+            return $this->attributes['canonical_url'];
+        }
+        return $this->generateUrl();
+    }
+
+    /**
+     * Get all country domains for this job
+     */
+    public function getCountryUrls(): array
+    {
+        $urls = [];
+        $countries = CountryHelper::getActiveCountries();
         
-        if ($this->legacy_id) {
-            return "{$scheme}://{$domain}/jobs/legacy/{$this->legacy_id}/{$this->slug}";
+        foreach ($countries as $country) {
+            $urls[$country->code] = $this->generateUrl($country->code);
         }
         
-        return "{$scheme}://{$domain}/jobs/{$this->slug}";
+        return $urls;
+    }
+
+    /**
+     * Get hreflang tags for international SEO
+     */
+    public function getHreflangTags(): array
+    {
+        $tags = [];
+        $countries = CountryHelper::getActiveCountries();
+        
+        foreach ($countries as $country) {
+            $url = $this->generateUrl($country->code);
+            $lang = strtolower($country->code);
+            
+            $tags[] = [
+                'rel' => 'alternate',
+                'hreflang' => "en-{$lang}",
+                'href' => $url,
+            ];
+        }
+        
+        // Add x-default
+        $tags[] = [
+            'rel' => 'alternate',
+            'hreflang' => 'x-default',
+            'href' => $this->generateUrl(),
+        ];
+        
+        return $tags;
     }
 }

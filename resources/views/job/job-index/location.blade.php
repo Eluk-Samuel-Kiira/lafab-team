@@ -31,13 +31,11 @@
             <div>
                 <select id="countryFilter" class="form-select form-select-solid w-150px">
                     <option value="">All Countries</option>
-                    <option value="AU">🇦🇺 Australia</option>
-                    <option value="UG">🇺🇬 Uganda</option>
-                    <option value="KE">🇰🇪 Kenya</option>
-                    <option value="TZ">🇹🇿 Tanzania</option>
-                    <option value="RW">🇷🇼 Rwanda</option>
-                    <option value="ZA">🇿🇦 South Africa</option>
-                    <option value="SG">🇸🇬 Singapore</option>
+                    @foreach(\App\Helpers\CountryHelper::getCountriesWithFlags() as $country)
+                        <option value="{{ $country['code'] }}">
+                            {{ $country['flag'] }} {{ $country['name'] }}
+                        </option>
+                    @endforeach
                 </select>
             </div>
         </div>
@@ -113,13 +111,11 @@
                             <label class="required fw-semibold fs-6 mb-2">Country</label>
                             <select class="form-select form-select-solid" name="country" id="add_country" required>
                                 <option value="">Select Country</option>
-                                <option value="AU">🇦🇺 Australia</option>
-                                <option value="UG">🇺🇬 Uganda</option>
-                                <option value="KE">🇰🇪 Kenya</option>
-                                <option value="TZ">🇹🇿 Tanzania</option>
-                                <option value="RW">🇷🇼 Rwanda</option>
-                                <option value="ZA">🇿🇦 South Africa</option>
-                                <option value="SG">🇸🇬 Singapore</option>
+                                @foreach(\App\Helpers\CountryHelper::getCountriesWithFlags() as $country)
+                                    <option value="{{ $country['code'] }}">
+                                        {{ $country['flag'] }} {{ $country['name'] }}
+                                    </option>
+                                @endforeach
                             </select>
                         </div>
                         <div class="col-md-6">
@@ -215,13 +211,11 @@
                             <label class="required fw-semibold fs-6 mb-2">Country</label>
                             <select class="form-select form-select-solid" name="country" id="edit_country" required>
                                 <option value="">Select Country</option>
-                                <option value="AU">🇦🇺 Australia</option>
-                                <option value="UG">🇺🇬 Uganda</option>
-                                <option value="KE">🇰🇪 Kenya</option>
-                                <option value="TZ">🇹🇿 Tanzania</option>
-                                <option value="RW">🇷🇼 Rwanda</option>
-                                <option value="ZA">🇿🇦 South Africa</option>
-                                <option value="SG">🇸🇬 Singapore</option>
+                                @foreach(\App\Helpers\CountryHelper::getCountriesWithFlags() as $country)
+                                    <option value="{{ $country['code'] }}">
+                                        {{ $country['flag'] }} {{ $country['name'] }}
+                                    </option>
+                                @endforeach
                             </select>
                         </div>
                         <div class="col-md-6">
