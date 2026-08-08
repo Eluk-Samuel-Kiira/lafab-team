@@ -6,6 +6,7 @@ use App\Models\Job\JobPost;
 use App\Models\Job\Company;
 use App\Models\Job\JobCategory;
 use App\Models\Job\JobLocation;
+use App\Models\Job\Country;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
@@ -13,74 +14,6 @@ use Illuminate\Support\Str;
 
 class SitemapService
 {
-    // Country configurations with their frontend URLs
-    private const COUNTRIES = [
-        'AU' => [
-            'code' => 'au',
-            'domain' => 'greataustraliajobs.com',
-            'frontend_url' => 'https://www.greataustraliajobs.com',
-            'name' => 'Australia',
-            'country_code' => 'AU',
-            'enabled' => true,
-        ],
-        'UG' => [
-            'code' => 'ug',
-            'domain' => 'greatugandajobs.com',
-            'frontend_url' => 'https://www.greatugandajobs.com',
-            'name' => 'Uganda',
-            'country_code' => 'UG',
-            'enabled' => true,
-        ],
-        'KE' => [
-            'code' => 'ke',
-            'domain' => 'greatkenyanjobs.com',
-            'frontend_url' => 'https://www.greatkenyanjobs.com',
-            'name' => 'Kenya',
-            'country_code' => 'KE',
-            'enabled' => true,
-        ],
-        'TZ' => [
-            'code' => 'tz',
-            'domain' => 'greattanzaniajobs.com',
-            'frontend_url' => 'https://www.greattanzaniajobs.com',
-            'name' => 'Tanzania',
-            'country_code' => 'TZ',
-            'enabled' => true,
-        ],
-        'RW' => [
-            'code' => 'rw',
-            'domain' => 'greatrwandajobs.com',
-            'frontend_url' => 'https://www.greatrwandajobs.com',
-            'name' => 'Rwanda',
-            'country_code' => 'RW',
-            'enabled' => true,
-        ],
-        'MW' => [
-            'code' => 'mw',
-            'domain' => 'greatmalawijobs.com',
-            'frontend_url' => 'https://www.greatmalawijobs.com',
-            'name' => 'Malawi',
-            'country_code' => 'MW',
-            'enabled' => true,
-        ],
-        'ZM' => [
-            'code' => 'zm',
-            'domain' => 'greatzambiajobs.com',
-            'frontend_url' => 'https://www.greatzambiajobs.com',
-            'name' => 'Zambia',
-            'country_code' => 'ZM',
-            'enabled' => true,
-        ],
-        'SG' => [
-            'code' => 'sg',
-            'domain' => 'greatsingaporejobs.com',
-            'frontend_url' => 'https://www.greatsingaporejobs.com',
-            'name' => 'Singapore',
-            'country_code' => 'SG',
-            'enabled' => true,
-        ],
-    ];
-
     private string $publicDir;
 
     public function __construct()
@@ -93,13 +26,53 @@ class SitemapService
     }
 
     /**
+     * Get all active countries from database
+     */
+    private function getCountries(): array
+    {
+        $countries = [];
+        
+        $activeCountries = Country::where('is_active', true)
+            ->whereNotNull('code')
+            ->orderBy('sort_order')
+            ->get();
+
+        foreach ($activeCountries as $country) {
+            $countryCode = strtolower($country->code);
+            $domain = $country->domain ?? "great{$countryCode}jobs.com";
+            $frontendUrl = $country->frontend_url ?? "https://www.{$domain}";
+            
+            $countries[$country->code] = [
+                'code' => $countryCode,
+                'domain' => $domain,
+                'frontend_url' => $frontendUrl,
+                'name' => $country->name,
+                'country_code' => $country->code,
+                'enabled' => $country->is_active,
+            ];
+        }
+
+        return $countries;
+    }
+
+    /**
+     * Get a specific country by code
+     */
+    private function getCountry(string $countryCode): ?array
+    {
+        $countries = $this->getCountries();
+        return $countries[$countryCode] ?? null;
+    }
+
+    /**
      * Generate sitemap for all countries
      */
     public function generateAll(): array
     {
         $results = [];
+        $countries = $this->getCountries();
 
-        foreach (self::COUNTRIES as $code => $country) {
+        foreach ($countries as $code => $country) {
             if (!$country['enabled']) {
                 continue;
             }
@@ -114,7 +87,7 @@ class SitemapService
      */
     public function generateCountrySitemap(string $countryCode): array
     {
-        $country = self::COUNTRIES[$countryCode] ?? null;
+        $country = $this->getCountry($countryCode);
         if (!$country || !$country['enabled']) {
             return ['error' => "Country {$countryCode} not supported or disabled"];
         }
@@ -177,7 +150,7 @@ class SitemapService
             ['url' => '/jobs', 'freq' => 'hourly', 'priority' => '0.9'],
             ['url' => '/companies', 'freq' => 'daily', 'priority' => '0.8'],
             ['url' => '/employers/newest-jobs', 'freq' => 'daily', 'priority' => '0.8'],
-            ['url' => '/employers/newest-jobs/job-categories/newest-jobs', 'freq' => 'daily', 'priority' => '0.7'], // Added this
+            ['url' => '/employers/newest-jobs/job-categories/newest-jobs', 'freq' => 'daily', 'priority' => '0.7'],
             ['url' => '/about', 'freq' => 'monthly', 'priority' => '0.5'],
             ['url' => '/contact', 'freq' => 'monthly', 'priority' => '0.4'],
             ['url' => '/privacy-policy', 'freq' => 'monthly', 'priority' => '0.3'],
@@ -209,11 +182,6 @@ class SitemapService
 
     /**
      * Get category URLs for a specific country
-     * 
-     * URL STRUCTURE:
-     * - ALL categories: /employers/newest-jobs/job-categories/newest-jobs/{slug}
-     *   Where {slug} is in format: category-administrative-jobs-in-2
-     *   Example: /employers/newest-jobs/job-categories/newest-jobs/category-administrative-jobs-in-2
      */
     private function getCategoryUrls(string $frontendUrl, string $countryCode): array
     {
@@ -223,7 +191,6 @@ class SitemapService
             ->where('country_code', $countryCode)
             ->withCount(['jobs' => function($q) use ($countryCode) {
                 $q->where('is_active', true)
-                ->where('deadline', '>=', now())
                 ->where(function($sub) use ($countryCode) {
                     $sub->whereHas('jobLocation', function($loc) use ($countryCode) {
                         $loc->where('country_code', $countryCode);
@@ -234,13 +201,11 @@ class SitemapService
             ->get(['slug', 'updated_at', 'name']);
 
         foreach ($categories as $category) {
-            // Check if slug already has 'category-' prefix
             $slug = $category->slug;
             if (!str_starts_with($slug, 'category-')) {
                 $slug = 'category-' . $slug;
             }
             
-            // Build the full URL with the new structure
             $url = $frontendUrl . '/employers/newest-jobs/job-categories/newest-jobs/' . $slug;
             
             $urls[] = $this->makeUrl(
@@ -256,11 +221,6 @@ class SitemapService
 
     /**
      * Get company URLs for a specific country
-     * 
-     * URL STRUCTURE:
-     * - ALL companies: /employers/newest-jobs/company-{slug}
-     *   Example: /employers/newest-jobs/company-hammondcare-5587
-     *   Example: /employers/newest-jobs/company-perigon-group-pty-limited
      */
     private function getCompanyUrls(string $frontendUrl, string $countryCode): array
     {
@@ -270,7 +230,6 @@ class SitemapService
             ->where('country_code', $countryCode)
             ->withCount(['jobs' => function($q) use ($countryCode) {
                 $q->where('is_active', true)
-                ->where('deadline', '>=', now())
                 ->where(function($sub) use ($countryCode) {
                     $sub->whereHas('jobLocation', function($loc) use ($countryCode) {
                         $loc->where('country_code', $countryCode);
@@ -281,8 +240,6 @@ class SitemapService
             ->get(['slug', 'updated_at', 'name', 'legacy_id']);
 
         foreach ($companies as $company) {
-            // ✅ ALL companies use the same URL structure
-            // Check if slug already has 'company-' prefix
             $slug = $company->slug;
             if (!str_starts_with($slug, 'company-')) {
                 $slug = 'company-' . $slug;
@@ -311,7 +268,7 @@ class SitemapService
         $locations = JobLocation::where('is_active', true)
             ->where('country_code', $countryCode)
             ->withCount(['jobPosts' => function($q) {
-                $q->where('is_active', true)->where('deadline', '>=', now());
+                $q->where('is_active', true);
             }])
             ->having('job_posts_count', '>', 0)
             ->get(['slug', 'updated_at', 'district']);
@@ -330,29 +287,24 @@ class SitemapService
 
     /**
      * Get job URLs for a specific country
-     * Only include jobs that have been pinged (last_pinged_at is not null)
+     * All jobs use: /jobs/job-detail/{slug}
      */
     private function getJobUrls(string $frontendUrl, string $countryCode): array
     {
         $urls = [];
         
-        // Get ONLY jobs that have been pinged (last_pinged_at is not null)
         $jobs = JobPost::where('is_active', true)
-            ->where('deadline', '>=', now())
-            ->whereNotNull('last_pinged_at')  // ONLY pinged jobs
+            ->whereNotNull('last_pinged_at')
             ->whereNotNull('slug')
             ->where('slug', '!=', '')
             ->where('country_code', $countryCode)
             ->get(['slug', 'updated_at', 'is_featured', 'is_urgent', 'legacy_id', 'id', 'created_at', 'published_at', 'published_until', 'last_pinged_at']);
 
         foreach ($jobs as $job) {
-            // All jobs use the same URL structure
-            $url = $frontendUrl . '/jobs/' . $job->slug;
+            // All jobs use the same URL structure: /jobs/job-detail/{slug}
+            $url = $frontendUrl . '/jobs/job-detail/' . $job->slug;
 
-            // Use last_pinged_at as the lastmod
             $lastmod = $job->last_pinged_at ?? $job->updated_at;
-            
-            // Use 'always' for featured/urgent jobs, 'weekly' for others
             $changefreq = ($job->is_featured || $job->is_urgent) ? 'always' : 'weekly';
             
             $urls[] = $this->makeUrl(
@@ -447,13 +399,14 @@ class SitemapService
     public function getStats(): array
     {
         $stats = [
-            'total_jobs' => JobPost::where('is_active', true)->where('deadline', '>=', now())->count(),
-            'legacy_jobs' => JobPost::where('is_active', true)->where('deadline', '>=', now())->whereNotNull('legacy_id')->count(),
-            'new_jobs' => JobPost::where('is_active', true)->where('deadline', '>=', now())->whereNull('legacy_id')->count(),
+            'total_jobs' => JobPost::where('is_active', true)->count(),
+            'legacy_jobs' => JobPost::where('is_active', true)->whereNotNull('legacy_id')->count(),
+            'new_jobs' => JobPost::where('is_active', true)->whereNull('legacy_id')->count(),
             'countries' => [],
         ];
 
-        foreach (self::COUNTRIES as $code => $country) {
+        $countries = $this->getCountries();
+        foreach ($countries as $code => $country) {
             if (!$country['enabled']) {
                 continue;
             }
@@ -464,7 +417,6 @@ class SitemapService
                 'domain' => $country['domain'],
                 'frontend_url' => $country['frontend_url'],
                 'jobs' => JobPost::where('is_active', true)
-                    ->where('deadline', '>=', now())
                     ->where('country_code', $countryCode)
                     ->count(),
                 'sitemap_exists' => is_dir($this->publicDir . '/' . $country['code']),
@@ -476,47 +428,27 @@ class SitemapService
 
     /**
      * Ping search engines for a specific country
-     * 
-     * Flow:
-     * 1. Mark all unpinged jobs as pinged (update statuses)
-     * 2. Regenerate sitemap with all pinged jobs
-     * 3. Send ping to search engines with updated sitemap
      */
     public function pingSearchEngines(string $countryCode): array
     {
-        $country = self::COUNTRIES[$countryCode] ?? null;
+        $country = $this->getCountry($countryCode);
         if (!$country) {
             return ['error' => "Country {$countryCode} not supported"];
         }
 
-        // Check if we're in production or local environment
-        // $appEnv = config('app.env');
-        // $isLocal = in_array($appEnv, ['local', 'development', 'testing']);
-        
-        // if ($isLocal) {
-        //     Log::info("Skipping search engine ping in {$appEnv} environment for country {$countryCode}");
-        //     return [
-        //         'status' => 'skipped',
-        //         'message' => "Ping skipped in {$appEnv} environment",
-        //         'environment' => $appEnv,
-        //         'country' => $countryCode,
-        //     ];
-        // }
-
-        // ✅ STEP 1: Update ALL unpinged active jobs in this country
+        // STEP 1: Update ALL unpinged active jobs in this country (remove deadline check)
         try {
             $now = now();
             $fiftyYearsFromNow = $now->copy()->addYears(50);
             
             $updated = JobPost::where('is_active', true)
                 ->where('country_code', $country['country_code'])
-                ->where('deadline', '>=', now())
                 ->whereNull('last_pinged_at')  // Only unpinged jobs
                 ->update([
                     'last_pinged_at' => $now,
                     'is_pinged' => true,
-                    'published_at' => $now,  // Set published_at when pinged
-                    'published_until' => $fiftyYearsFromNow,  // 50 years from now
+                    'published_at' => $now,
+                    'published_until' => $fiftyYearsFromNow,
                 ]);
             
             Log::info("Updated {$updated} unpinged jobs in country {$countryCode}");
@@ -529,7 +461,7 @@ class SitemapService
             ];
         }
 
-        // ✅ STEP 2: Regenerate the sitemap for this country (includes newly pinged jobs)
+        // STEP 2: Regenerate the sitemap for this country
         Log::info("Regenerating sitemap for country: {$countryCode}");
         $sitemapResult = $this->generateCountrySitemap($countryCode);
         
@@ -542,7 +474,7 @@ class SitemapService
             ];
         }
 
-        // ✅ STEP 3: Ping search engines with the updated sitemap
+        // STEP 3: Ping search engines with the updated sitemap
         $sitemapUrl = urlencode($country['frontend_url'] . '/sitemaps/' . $country['code'] . '/sitemap_index.xml');
         $results = [];
 
@@ -555,13 +487,23 @@ class SitemapService
         foreach ($engines as $name => $url) {
             try {
                 $response = Http::timeout(10)->get($url);
+                
+                // Check if response is successful (2xx)
+                $isSuccess = $response->successful();
+                
+                // For Google and Bing, 404 might mean the sitemap hasn't been submitted yet
+                // But we still log it as a warning
+                if ($response->status() === 404 && ($name === 'google' || $name === 'bing')) {
+                    Log::warning("Sitemap not found for {$name} (Status 404). Make sure you've submitted your sitemap to {$name} Webmaster Tools.");
+                }
+                
                 $results[$name] = [
-                    'success' => $response->successful(),
+                    'success' => $isSuccess,
                     'status' => $response->status(),
-                    'message' => $response->successful() ? 'Ping successful' : 'Ping failed',
+                    'message' => $isSuccess ? 'Ping successful' : 'Ping failed - Status: ' . $response->status(),
                 ];
                 
-                if ($response->successful()) {
+                if ($isSuccess) {
                     Log::info("Successfully pinged {$name} for country {$countryCode}");
                 } else {
                     Log::warning("Failed to ping {$name} for country {$countryCode}: Status " . $response->status());
@@ -587,14 +529,12 @@ class SitemapService
         }
 
         return [
-            'status' => $pingSuccess ? 'success' : 'failed',
-            'message' => $pingSuccess ? 'Sitemap generated and search engines notified' : 'Sitemap generated but search engine ping failed',
+            'status' => $pingSuccess ? 'success' : 'partial',
+            'message' => $pingSuccess ? 'Sitemap generated and at least one search engine notified' : 'Sitemap generated but search engine ping failed',
             'country' => $countryCode,
             'jobs_updated' => $updated ?? 0,
             'sitemap' => $sitemapResult,
             'ping_results' => $results,
         ];
     }
-
-
 }

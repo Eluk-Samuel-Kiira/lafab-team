@@ -563,4 +563,40 @@ class JobController extends Controller
             return [];
         }
     }
+
+    /**
+     * Record that a user opened the apply modal for this job.
+     * Kept deliberately simple - a raw increment - since "opened the apply
+     * modal" is an intent signal, not proof of a completed application; the
+     * country-app side de-dupes repeat opens within the same session so
+     * refreshing/reopening doesn't inflate the count.
+     */
+    public function trackApplication($id)
+    {
+        try {
+            $job = JobPost::find($id);
+    
+            if (!$job) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Job not found',
+                ], 404);
+            }
+    
+            $job->increment('application_count');
+    
+            return response()->json([
+                'success' => true,
+                'application_count' => $job->application_count,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error tracking application: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to track application',
+            ], 500);
+        }
+    }
+
+
 }

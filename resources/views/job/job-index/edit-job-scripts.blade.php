@@ -45,6 +45,7 @@ window.editJob = function(id) {
             document.getElementById('edit_currency').value = data.currency || 'AUD';
             document.getElementById('edit_duty_station').value = data.duty_station || '';
             document.getElementById('edit_location_type').value = data.location_type || 'on-site';
+            document.getElementById('edit_job_source').value = data.job_source || 'competitor_website';
             document.getElementById('edit_employment_type').value = data.employment_type || 'full-time';
             document.getElementById('edit_work_hours').value = data.work_hours || '';
             document.getElementById('edit_email').value = data.email || '';

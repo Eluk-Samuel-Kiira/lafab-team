@@ -474,14 +474,31 @@
         };
 
         Object.entries(dropdownMap).forEach(([prefix, config]) => {
-            const drop = drops[`f_${prefix}`];   // note: drops keys are 'f_company' etc, not 'company'
+            const drop = drops[`f_${prefix}`];
             if (!drop) return;
             const value = d[config.dataKey] || config.fallback;
             if (value) {
                 const matched = drop.setByName(value, false);
-                if (!matched) drop.reset();
+                if (!matched) {
+                    // If no match, reset the search input but KEEP the dropdown data
+                    // Just clear the selection without destroying the dropdown
+                    const hidden = document.getElementById(`f_${prefix}_id`);
+                    const search = document.getElementById(`f_${prefix}_search`);
+                    if (hidden) hidden.value = '';
+                    if (search) search.value = '';
+                    
+                    // Re-render the dropdown with all available options
+                    const items = searchableSelectData[`f_${prefix}`] || [];
+                    if (items.length > 0) {
+                        renderSearchableDropdown(`f_${prefix}`, items);
+                    }
+                }
             } else {
-                drop.reset();
+                // No value provided - just ensure dropdown shows all options
+                const items = searchableSelectData[`f_${prefix}`] || [];
+                if (items.length > 0) {
+                    renderSearchableDropdown(`f_${prefix}`, items);
+                }
             }
         });
 

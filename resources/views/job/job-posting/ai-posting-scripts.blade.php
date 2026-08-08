@@ -17,11 +17,6 @@ const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.content ||
 // ================================================================
 function makeDropHandle(prefix) {
     return {
-        /**
-         * Find an item by label in the currently loaded options for this
-         * dropdown and select it. Exact match first; if exact=false, also
-         * tries a case-insensitive substring match either direction.
-         */
         setByName(name, exact = true) {
             if (!name) return false;
             const items = searchableSelectData[prefix] || [];
@@ -41,7 +36,19 @@ function makeDropHandle(prefix) {
             return false;
         },
         reset() {
-            clearSearchableSelect(prefix);
+            // Clear selection but keep dropdown functional
+            const hidden = document.getElementById(`${prefix}_id`);
+            const search = document.getElementById(`${prefix}_search`);
+            if (hidden) hidden.value = '';
+            if (search) search.value = '';
+            
+            // Re-render dropdown with all items
+            const items = searchableSelectData[prefix] || [];
+            if (items.length > 0) {
+                renderSearchableDropdown(prefix, items);
+            }
+            // Close dropdown
+            closeSearchableDropdown(prefix);
         }
     };
 }
@@ -331,12 +338,11 @@ function renderSearchableDropdown(prefix, items) {
     const dropdown = document.getElementById(`${prefix}_dropdown`);
     if (!dropdown) return;
     
-    // Only update the dropdown content, don't clear it entirely
-    // Just replace the inner HTML with new options
     if (!items || items.length === 0) {
-        dropdown.innerHTML = '<div class="searchable-select-empty">No matches found</div>';
+        dropdown.innerHTML = '<div class="searchable-select-empty">No options available</div>';
         return;
     }
+    
     dropdown.innerHTML = items.map(item => `
         <div class="searchable-select-option" 
              data-id="${escapeHtml(String(item.id))}" 

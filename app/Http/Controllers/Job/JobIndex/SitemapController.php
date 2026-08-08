@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Services\Indexing\SitemapService;
 use App\Models\Job\JobPost;
 use Illuminate\Http\Request;
+use App\Models\Job\Country;
+use App\Helpers\CountryHelper;
 use Illuminate\Support\Facades\Response;
 
 class SitemapController extends Controller
@@ -52,8 +54,10 @@ class SitemapController extends Controller
         ];
 
         // Get per-country statistics
-        $countries = ['AU', 'UG', 'KE', 'TZ', 'RW', 'MW', 'ZM', 'SG'];
-        foreach ($countries as $code) {
+        $activeCountries = CountryHelper::getActiveCountries();
+
+        foreach ($activeCountries as $country) {
+            $code = $country['code'];
             $countryQuery = JobPost::where('is_active', true)
                 ->where('deadline', '>=', now())
                 ->where('country_code', $code);
@@ -269,8 +273,14 @@ class SitemapController extends Controller
         }
 
         if ($ping && !$country) {
-            // Ping all countries
-            foreach (['AU', 'UG', 'KE', 'TZ', 'RW', 'MW', 'ZM', 'SG'] as $code) {
+            // Ping all active countries dynamically
+            $activeCountries = Country::where('is_active', true)
+                ->whereNotNull('code')
+                ->orderBy('sort_order')
+                ->pluck('code')
+                ->toArray();
+                
+            foreach ($activeCountries as $code) {
                 $this->sitemapService->pingSearchEngines($code);
             }
         } elseif ($ping && $country) {

@@ -20,8 +20,8 @@ class AiService
     public function __construct()
     {
         $this->config = config('ai.models', []);
-        $this->fallbackModels = config('ai.fallback_models', ['openai', 'claude']);
-        $this->defaultModel = config('ai.default', 'claude');
+        $this->fallbackModels = config('ai.fallback_models', ['openai', 'claude', 'cohere']);
+        $this->defaultModel = config('ai.default', 'gemini');
         $this->timeout = config('ai.timeout', 90);
         $this->retryAttempts = config('ai.retries.attempts', 2);
         $this->retryDelay = config('ai.retries.delay', 200);
@@ -219,6 +219,9 @@ class AiService
      * Turns a raw application_link into a "To apply, click here" hyperlink inside
      * application_procedure, and makes sure no raw link/email/phone leaked into
      * the wrong fields (belt-and-braces on top of the prompt instructions).
+     *
+     * Also normalizes "telephone" so that multiple contact numbers are always
+     * comma-separated, regardless of how the source/AI formatted them.
      */
     protected function applyApplicationLinkHandling(array $data): array
     {
@@ -237,8 +240,27 @@ class AiService
             }
         }
 
+        // Belt-and-braces: make sure multiple contact numbers are consistently
+        // comma-separated, even if the source/AI used "/", ";", "and", "or", etc.
+        if (!empty($data['telephone']) && is_string($data['telephone'])) {
+            $data['telephone'] = $this->normalizeTelephone($data['telephone']);
+        }
+
         unset($data['application_link']); // not a real form field - already folded into application_procedure
         return $data;
+    }
+
+    /**
+     * Normalize a telephone field so that when more than one contact number
+     * is present (WhatsApp, callable, or both), they end up comma-separated
+     * in a single consistent format instead of "/", ";", "and", "or", etc.
+     */
+    protected function normalizeTelephone(string $telephone): string
+    {
+        $normalized = preg_replace('/\s*(\/|;|\band\b|\bor\b|\|)\s*/i', ', ', $telephone);
+        $numbers = array_filter(array_map('trim', explode(',', $normalized)), fn($n) => $n !== '');
+
+        return implode(', ', array_values(array_unique($numbers)));
     }
 
     /**
@@ -562,7 +584,7 @@ class AiService
     }
 
     /**
-     * Wrap the rich-text content fields in an Arial font style, applied here
+     * Wrap the rich-text content fields in Arial, 12px font, applied here
      * in PHP (so it's guaranteed to produce valid, correctly-escaped HTML)
      * rather than asking the AI to embed style="..." attributes itself -
      * that was producing unescaped quotes inside the JSON string values,
@@ -571,7 +593,9 @@ class AiService
      */
     protected function applyArialFontToContentFields(array $data): array
     {
-        foreach (['job_description', 'responsibilities', 'qualifications', 'application_procedure'] as $field) {
+        // All 5 rich-text fields shown to the user: Job Description, Key Responsibilities,
+        // Qualifications, Required Skills, Application Procedure.
+        foreach (['job_description', 'responsibilities', 'qualifications', 'skills', 'application_procedure'] as $field) {
             if (!empty($data[$field]) && is_string($data[$field])) {
                 $data[$field] = $this->wrapInArialFont($data[$field]);
             }
@@ -579,12 +603,53 @@ class AiService
         return $data;
     }
 
+    /**
+     * Wraps content in Arial 12pt, AND pushes that same inline style onto every
+     * inner tag (p, li, etc.), not just the outer wrapper div. Just styling the
+     * wrapper isn't enough if the rich-text editor's own stylesheet sets a
+     * font-size on child tags directly - a same-specificity rule on the child
+     * itself beats an inherited value from an ancestor, which is why some
+     * fields (e.g. Required Skills, which previously wasn't wrapped at all)
+     * rendered at a different size than the rest.
+     */
     protected function wrapInArialFont(string $content): string
     {
         if (str_contains($content, 'rich-editor-arial-wrap')) {
             return $content; // already wrapped
         }
-        return '<div class="rich-editor-arial-wrap" style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.6;">' . $content . '</div>';
+
+        $style = 'font-family: Arial, Helvetica, sans-serif; font-size: 12pt; line-height: 1.6;';
+        $content = $this->forceInlineStyleOnTags($content, $style);
+
+        return '<div class="rich-editor-arial-wrap" style="' . $style . '">' . $content . '</div>';
+    }
+
+    /**
+     * Merges the given inline style onto every block/text-level tag found in
+     * the HTML fragment (adding a style="" attribute, or merging into an
+     * existing one), so the font-size can't be silently overridden by
+     * more specific CSS elsewhere on the page.
+     */
+    protected function forceInlineStyleOnTags(string $html, string $style): string
+    {
+        return preg_replace_callback(
+            '/<(p|ul|ol|li|strong|em|b|i|span|div|table|tr|td|th|h[1-6]|a)\b([^>]*)>/i',
+            function ($m) use ($style) {
+                $tag = $m[1];
+                $attrs = $m[2];
+
+                if (preg_match('/style\s*=\s*"([^"]*)"/i', $attrs, $styleMatch)) {
+                    $existing = rtrim(trim($styleMatch[1]), '; ');
+                    $merged = $existing !== '' ? $existing . '; ' . $style : $style;
+                    $attrs = preg_replace('/style\s*=\s*"([^"]*)"/i', 'style="' . $merged . '"', $attrs);
+                } else {
+                    $attrs .= ' style="' . $style . '"';
+                }
+
+                return "<{$tag}{$attrs}>";
+            },
+            $html
+        );
     }
 
     protected function buildExtractionPrompt(string $content, string $sourceType, array $referenceData = []): string
@@ -597,106 +662,138 @@ class AiService
             : 'The CONTENT below is pasted job description text.';
 
         return <<<PROMPT
-            You are an expert job-board data extraction agent.
+                You are an expert job-board data extraction agent.
 
-            SOURCE TYPE: {$sourceType}
-            {$sourceInstruction}
+                SOURCE TYPE: {$sourceType}
+                {$sourceInstruction}
 
-            {$referenceBlock}
+                {$referenceBlock}
 
-            ABSOLUTE RULE - PRESERVE VERBATIM:
-            If job_description, responsibilities, qualifications, skills, or application_procedure are present in
-            the content, copy them into the JSON EXACTLY as given - same wording, same order, same structure,
-            including any tables (as HTML <table> markup). Do NOT summarize, shorten, paraphrase, or "clean up"
-            anything that is actually present. Only WRITE new content for a field when that field is completely
-            absent from the source.
+                ABSOLUTE RULE - PRESERVE VERBATIM:
+                If job_description, responsibilities, qualifications, skills, or application_procedure are present in
+                the content, copy them into the JSON EXACTLY as given - same wording, same order, same structure,
+                including any tables (as HTML <table> markup). Do NOT summarize, shorten, paraphrase, or "clean up"
+                anything that is actually present. Only WRITE new content for a field when that field is completely
+                absent from the source.
 
-            CONTACT INFO MUST NOT APPEAR IN BODY CONTENT:
-            Emails, phone numbers, WhatsApp numbers, and application links/URLs must NEVER appear inside
-            job_description, responsibilities, qualifications, or skills - even if they appear that way in the
-            source. Strip them out of those fields entirely and instead put them ONLY in the dedicated fields
-            below (email, telephone, application_link).
+                CRITICAL - RESPONSIBILITIES & QUALIFICATIONS MUST BE HTML LISTS:
+                When you generate or return responsibilities and qualifications, they MUST be formatted as HTML
+                unordered lists using <ul> and <li> tags. NEVER return them as plain text with dashes, asterisks,
+                numbers, commas, or periods as separators. ALWAYS use proper HTML list format.
+                
+                CORRECT EXAMPLE:
+                "responsibilities": "<ul><li>Lead and manage key initiatives</li><li>Collaborate with cross-functional teams</li><li>Ensure timely delivery of projects</li></ul>"
+                
+                INCORRECT EXAMPLE (DO NOT DO THIS):
+                "responsibilities": "Lead and manage key initiatives, Collaborate with cross-functional teams, Ensure timely delivery of projects"
+                
+                INCORRECT EXAMPLE (DO NOT DO THIS):
+                "responsibilities": "- Lead and manage key initiatives\n- Collaborate with cross-functional teams\n- Ensure timely delivery of projects"
 
-            APPLICATION LINK HANDLING:
-            - If an application URL/link is present anywhere in the content, put the raw URL in "application_link"
-            and leave application_procedure to describe the general process in plain text (no raw link inside it -
-            the raw link will be turned into a "click here" hyperlink automatically afterward).
-            - If no link is present but there is a described procedure (email a CV, visit an office, etc.), put that
-            in application_procedure as normal and leave application_link null.
+                CONTACT INFO MUST NOT APPEAR IN BODY CONTENT:
+                Emails, phone numbers, WhatsApp numbers, and application links/URLs must NEVER appear inside
+                job_description, responsibilities, qualifications, or skills - even if they appear that way in the
+                source. Strip them out of those fields entirely and instead put them ONLY in the dedicated fields
+                below (email, telephone, application_link).
 
-            PHONE / CONTACT HANDLING:
-            - If a phone number is present, put it in "telephone".
-            - Set is_whatsapp_contact = true if the number is explicitly described as WhatsApp.
-            - Set is_telephone_call = true if the number is described as callable, or if no qualifier is given at all
-            (default to true in that case).
-            - Both can be true if the content indicates the number works for both.
+                APPLICATION LINK HANDLING:
+                - If an application URL/link is present anywhere in the content, put the raw URL in "application_link"
+                and leave application_procedure to describe the general process in plain text (no raw link inside it -
+                the raw link will be turned into a "click here" hyperlink automatically afterward).
+                - If no link is present but there is a described procedure (email a CV, visit an office, etc.), put that
+                in application_procedure as normal and leave application_link null.
 
-            JSON FORMATTING RULE (important - broken JSON here means the whole extraction fails):
-            - Return ONLY a single valid JSON object. No markdown fences, no commentary before or after.
-            - Do NOT add any HTML style="..." attributes or any other attributes containing double quotes.
-            Use plain HTML tags only (<p>, <ul>, <li>, <strong>, <table>, <tr>, <td>, etc.) with no attributes,
-            so there is no risk of an unescaped quote breaking the JSON.
-            - If you must quote something inside a string value, escape it as \\" - never leave a bare " inside
-            a JSON string.
+                PHONE / CONTACT HANDLING:
+                - If a phone number is present, put it in "telephone".
+                - If more than one contact number is present (WhatsApp, callable, or both), list ALL of them in
+                "telephone" separated by commas, e.g. "+256700000000, +256770000000" - never join them with "/",
+                "and", "or", or on separate lines.
+                - Set is_whatsapp_contact = true if any of the numbers is explicitly described as WhatsApp.
+                - Set is_telephone_call = true if any of the numbers is described as callable, or if no qualifier is
+                given at all for a number (default to true for that number in that case).
+                - Both flags can be true at once if the content indicates numbers work for both purposes.
 
-            IF THE CONTENT DOES NOT DESCRIBE A REAL JOB POSTING (e.g. an error page, login wall, empty page, or
-            unrelated content), respond with ONLY this JSON and nothing else:
-            {"error": true, "message": "No valid job posting was found in the provided content."}
+                CONTENT QUALITY & SEO RULE (applies to anything you WRITE rather than copy verbatim):
+                - Write natural, professional, human-sounding copy. Avoid generic AI phrasing, repetitive sentence
+                openers ("We are looking for...", "This is an exciting opportunity..." used more than once), and
+                filler that reads as machine-generated. Vary sentence length and structure so it reads like it was
+                written by an experienced HR copywriter, not a template.
+                - Naturally weave in the job title and relevant industry, skill, and location keywords so the
+                content is well-optimized for search engines, without keyword-stuffing or awkward repetition.
+                - If the final job_description (verbatim, generated, or a mix) would end up under roughly 15 words,
+                treat that as too thin for SEO: expand it with additional relevant, natural, role-appropriate detail
+                so the description is substantive (several sentences across a few short paragraphs), even if that
+                means supplementing sparse source content with reasonable extra detail about the role.
 
-            SMART DEFAULTS (apply ONLY when a field is completely missing from the source):
-            - employment_type: "full-time"
-            - deadline: "{$twoWeeksAhead}"
-            - experience_level_name: "entry level" (only if that exact string exists in the Experience Levels list above, else null)
-            - education_level_name: "Certificate" (only if that exact string exists in the Education Levels list above, else null)
-            - location_type: "on-site"
-            - For job_description/responsibilities/qualifications/skills that are completely absent: write
-            professional, role-appropriate content based on the job_title (and company_name if known).
+                SKILLS FORMAT:
+                - Skills should be a comma-separated list, e.g. "Communication, Teamwork, Problem Solving, Time Management"
 
-            FIELDS TO RETURN:
-            {
-            "job_title": "exact job title",
-            "company_name": "exact company name as written in the content, else null - do NOT pick from a list",
-            "job_description": "verbatim if present, else generated - plain HTML, no attributes, no contact info",
-            "responsibilities": "verbatim if present, else generated - plain HTML, no attributes, no contact info",
-            "qualifications": "verbatim if present, else generated - plain HTML, no attributes, no contact info",
-            "skills": "verbatim if present, else generated - comma-separated list",
-            "application_procedure": "verbatim if present, else generated - plain HTML, no attributes, no raw link",
-            "application_link": "raw application URL if one is present anywhere in the content, else null",
-            "email": "contact email if mentioned, else null",
-            "telephone": "phone number if mentioned, else null",
-            "deadline": "YYYY-MM-DD, from content if present else the default above",
-            "duty_station": "office/work location address if mentioned, else null",
-            "location_type": "remote|hybrid|on-site",
-            "employment_type": "full-time|part-time|contract|internship|volunteer|temporary",
-            "salary_amount": "numeric amount if mentioned, else null",
-            "payment_period": "monthly|yearly|weekly|daily|hourly, else null",
-            "currency": "currency code if mentioned, else null",
-            "meta_description": "155-character SEO description generated from the job title/content",
-            "keywords": "comma-separated SEO keywords",
-            "experience_level_name": "must be an EXACT value from the Experience Levels list above, else null",
-            "education_level_name": "must be an EXACT value from the Education Levels list above, else null",
-            "industry_name": "must be an EXACT value from the Industries list above, else null",
-            "category_name": "must be an EXACT value from the Job Categories list above, else null",
-            "job_type_name": "must be an EXACT value from the Job Types list above, else null",
-            "job_location_name": "must be an EXACT value from the Locations list above (match by district), else null",
-            "salary_range_name": "must be an EXACT value from the Salary Ranges list above, else null",
-            "country_code": "one of AU, UG, KE, TZ, RW, MW, ZM, SG if the job's country matches one of these, else null",
-            "is_urgent": false,
-            "is_featured": false,
-            "is_resume_required": true,
-            "is_cover_letter_required": false,
-            "is_academic_documents_required": false,
-            "is_application_required": false,
-            "is_whatsapp_contact": false,
-            "is_telephone_call": false,
-            "work_hours": "work schedule if mentioned, else null"
-            }
+                JSON FORMATTING RULE (important - broken JSON here means the whole extraction fails):
+                - Return ONLY a single valid JSON object. No markdown fences, no commentary before or after.
+                - Do NOT add any HTML style="..." attributes or any other attributes containing double quotes.
+                Use plain HTML tags only (<p>, <ul>, <li>, <strong>, <table>, <tr>, <td>, etc.) with no attributes,
+                so there is no risk of an unescaped quote breaking the JSON.
+                - If you must quote something inside a string value, escape it as \\" - never leave a bare " inside
+                a JSON string.
 
-            CONTENT:
-            ---
-            {$content}
-            ---
-            PROMPT;
+                IF THE CONTENT DOES NOT DESCRIBE A REAL JOB POSTING (e.g. an error page, login wall, empty page, or
+                unrelated content), respond with ONLY this JSON and nothing else:
+                {"error": true, "message": "No valid job posting was found in the provided content."}
+
+                SMART DEFAULTS (apply ONLY when a field is completely missing from the source):
+                - employment_type: "full-time"
+                - deadline: "{$twoWeeksAhead}"
+                - experience_level_name: "entry level" (only if that exact string exists in the Experience Levels list above, else null)
+                - education_level_name: "Certificate" (only if that exact string exists in the Education Levels list above, else null)
+                - location_type: "on-site"
+                - For job_description/responsibilities/qualifications/skills that are completely absent: write
+                professional, role-appropriate content based on the job_title (and company_name if known).
+
+                FIELDS TO RETURN:
+                {
+                "job_title": "exact job title",
+                "company_name": "exact company name as written in the content, else null - do NOT pick from a list",
+                "job_description": "verbatim if present, else generated - plain HTML, no attributes, no contact info",
+                "responsibilities": "MUST be HTML <ul><li> list format - NEVER plain text with dashes or commas",
+                "qualifications": "MUST be HTML <ul><li> list format - NEVER plain text with dashes or commas",
+                "skills": "comma-separated list",
+                "application_procedure": "verbatim if present, else generated - plain HTML, no attributes, no raw link",
+                "application_link": "raw application URL if one is present anywhere in the content, else null",
+                "email": "contact email if mentioned, else null",
+                "telephone": "phone number(s) if mentioned, comma-separated if more than one, else null",
+                "deadline": "YYYY-MM-DD, from content if present else the default above",
+                "duty_station": "office/work location address if mentioned, else null",
+                "location_type": "remote|hybrid|on-site",
+                "employment_type": "full-time|part-time|contract|internship|volunteer|temporary",
+                "salary_amount": "numeric amount if mentioned, else null",
+                "payment_period": "monthly|yearly|weekly|daily|hourly, else null",
+                "currency": "currency code if mentioned, else null",
+                "meta_description": "155-character SEO description generated from the job title/content",
+                "keywords": "comma-separated SEO keywords",
+                "experience_level_name": "must be an EXACT value from the Experience Levels list above, else null",
+                "education_level_name": "must be an EXACT value from the Education Levels list above, else null",
+                "industry_name": "must be an EXACT value from the Industries list above, else null",
+                "category_name": "must be an EXACT value from the Job Categories list above, else null",
+                "job_type_name": "must be an EXACT value from the Job Types list above, else null",
+                "job_location_name": "must be an EXACT value from the Locations list above (match by district), else null",
+                "salary_range_name": "must be an EXACT value from the Salary Ranges list above, else null",
+                "country_code": "one of AU, UG, KE, TZ, RW, MW, ZM, SG if the job's country matches one of these, else null",
+                "is_urgent": false,
+                "is_featured": false,
+                "is_resume_required": true,
+                "is_cover_letter_required": false,
+                "is_academic_documents_required": false,
+                "is_application_required": false,
+                "is_whatsapp_contact": false,
+                "is_telephone_call": false,
+                "work_hours": "work schedule if mentioned, else null"
+                }
+
+                CONTENT:
+                ---
+                {$content}
+                ---
+                PROMPT;
     }
 
     protected function buildImageExtractionPrompt(array $referenceData = []): string
@@ -706,10 +803,21 @@ class AiService
         return "Extract all job information visible in this image. Preserve the EXACT text as shown - "
             . "do not summarize or reword anything that is actually visible. Only generate content for "
             . "fields that are completely absent from the image.\n\n{$referenceBlock}\n\n"
+            . "CRITICAL - RESPONSIBILITIES & QUALIFICATIONS MUST BE HTML LISTS:\n"
+            . "When you generate or return responsibilities and qualifications, they MUST be formatted as HTML "
+            . "unordered lists using <ul> and <li> tags. NEVER return them as plain text with dashes, asterisks, "
+            . "numbers, commas, or periods as separators. ALWAYS use proper HTML list format.\n\n"
+            . "CORRECT EXAMPLE: \"responsibilities\": \"<ul><li>Lead and manage key initiatives</li><li>Collaborate with cross-functional teams</li></ul>\"\n"
+            . "INCORRECT EXAMPLE (DO NOT DO THIS): \"responsibilities\": \"Lead and manage key initiatives, Collaborate with cross-functional teams\"\n\n"
             . "Do NOT include emails, phone numbers, WhatsApp numbers, or application links inside "
             . "job_description, responsibilities, qualifications, or skills - put them only in the "
-            . "dedicated email/telephone/application_link fields. If an application URL is visible, put it "
-            . "in application_link (do not embed the raw link in application_procedure). "
+            . "dedicated email/telephone/application_link fields. If more than one contact number is "
+            . "visible, list them all in telephone separated by commas (never with \"/\", \"and\", or \"or\"). "
+            . "If an application URL is visible, put it in application_link (do not embed the raw link in "
+            . "application_procedure). Any content you write rather than copy from the image must read as "
+            . "natural, human-written, SEO-friendly copy (not generic or repetitive AI phrasing), and if the "
+            . "resulting job_description would be under roughly 15 words, expand it with reasonable "
+            . "role-appropriate detail so it's substantive enough for search engines. "
             . "Return ONLY a single valid JSON object with the same fields as a standard job extraction "
             . "(job_title, company_name, job_description, responsibilities, qualifications, skills, "
             . "application_procedure, application_link, email, telephone, deadline, duty_station, "
@@ -731,31 +839,47 @@ class AiService
         $referenceBlock = $this->formatReferenceListsForPrompt($referenceData);
 
         return <<<PROMPT
-        Generate a complete, professional job posting for a "{$title}"{$companyText}{$countryText}.
+            Generate a complete, professional job posting for a "{$title}"{$companyText}{$countryText}.
 
-        {$referenceBlock}
+            CRITICAL - RESPONSIBILITIES & QUALIFICATIONS MUST BE HTML LISTS:
+            Responsibilities and qualifications MUST be formatted as HTML unordered lists using <ul> and <li> tags.
+            NEVER return them as plain text with dashes, asterisks, numbers, commas, or periods as separators.
+            ALWAYS use proper HTML list format.
+            
+            CORRECT EXAMPLE for responsibilities:
+            "<ul><li>Lead and manage key initiatives</li><li>Collaborate with cross-functional teams</li><li>Ensure timely delivery of projects</li></ul>"
+            
+            CORRECT EXAMPLE for qualifications:
+            "<ul><li>Bachelor's degree in relevant field</li><li>5+ years of experience</li><li>Excellent communication skills</li></ul>"
 
-        Return ONLY a valid JSON object - no explanation, no markdown, no code blocks. Do not use any HTML
-        attributes (no style="...") on any tag - plain <p>/<ul>/<li> only, so nothing can break the JSON. Do not
-        include any contact info or application links anywhere - this is a fresh generated posting.
+            {$referenceBlock}
 
-        {
-        "job_description": "3-4 paragraphs as HTML with <p> tags",
-        "responsibilities": "6-8 items as HTML <ul><li> list",
-        "qualifications": "required and preferred qualifications as HTML <ul><li> list with two sections",
-        "skills": "comma-separated list of 8-12 relevant skills",
-        "meta_description": "155-character SEO meta description",
-        "keywords": "comma-separated SEO keywords",
-        "experience_level_name": "must be an EXACT value from the Experience Levels list above, else null",
-        "education_level_name": "must be an EXACT value from the Education Levels list above, else null",
-        "industry_name": "must be an EXACT value from the Industries list above, else null",
-        "category_name": "must be an EXACT value from the Job Categories list above, else null",
-        "job_type_name": "must be an EXACT value from the Job Types list above, else null",
-        "employment_type": "full-time|part-time|contract|internship|volunteer|temporary",
-        "location_type": "on-site|remote|hybrid",
-        "deadline": "{$deadline}"
-        }
-        PROMPT;
+            Write natural, human-sounding, SEO-optimized copy - vary sentence structure and wording, avoid
+            generic or repetitive AI-sounding phrasing, and naturally include the job title and relevant
+            industry/skill/location keywords. The job_description must be substantive (well over 15 words,
+            several sentences across a few short paragraphs) - never generate a thin one-liner.
+
+            Return ONLY a valid JSON object - no explanation, no markdown, no code blocks. Do not use any HTML
+            attributes (no style="...") on any tag - plain <p>/<ul>/<li> only, so nothing can break the JSON. Do not
+            include any contact info or application links anywhere - this is a fresh generated posting.
+
+            {
+            "job_description": "3-4 paragraphs as HTML with <p> tags",
+            "responsibilities": "HTML <ul><li> list format - NEVER plain text with dashes or commas",
+            "qualifications": "HTML <ul><li> list format - NEVER plain text with dashes or commas",
+            "skills": "comma-separated list of 8-12 relevant skills",
+            "meta_description": "155-character SEO meta description",
+            "keywords": "comma-separated SEO keywords",
+            "experience_level_name": "must be an EXACT value from the Experience Levels list above, else null",
+            "education_level_name": "must be an EXACT value from the Education Levels list above, else null",
+            "industry_name": "must be an EXACT value from the Industries list above, else null",
+            "category_name": "must be an EXACT value from the Job Categories list above, else null",
+            "job_type_name": "must be an EXACT value from the Job Types list above, else null",
+            "employment_type": "full-time|part-time|contract|internship|volunteer|temporary",
+            "location_type": "on-site|remote|hybrid",
+            "deadline": "{$deadline}"
+            }
+            PROMPT;
     }
 
     protected function buildEnhancePrompt(string $fieldName, string $content, string $instruction): string
@@ -765,6 +889,7 @@ class AiService
 
         RULES:
         - Preserve the original meaning and any facts present; improve clarity and professionalism only.
+        - Write natural, human-sounding copy - avoid generic or repetitive AI-sounding phrasing.
         - Return ONLY the improved content as clean HTML using <p> and <ul><li> - no attributes on any tag.
         - Do NOT include explanations, markdown fences, or code blocks.
         - Do NOT wrap the response in JSON - return plain HTML text only.
@@ -847,7 +972,42 @@ class AiService
         }
         $data['application_procedure'] = $data['application_procedure'] ?? '';
 
+        // SEO safety net: even if job_description came back non-empty (verbatim from the
+        // source, or from the block above), it might still be too thin (e.g. a source
+        // page that only had a one-line title with no real description) to be useful for
+        // search engines. Pad it out with additional role-appropriate detail rather than
+        // discarding whatever real content was there.
+        if (!empty($data['job_title'])) {
+            $data['job_description'] = $this->ensureMinimumDescriptionLength(
+                $data['job_description'] ?? '',
+                $data['job_title'],
+                $data['company_name'] ?: null,
+                $data['duty_station']
+            );
+        }
+
         return $data;
+    }
+
+    /**
+     * If job_description is under ~15 words it's too thin to help SEO, so this
+     * supplements it with additional natural, role-appropriate detail instead of
+     * leaving it (or replacing it outright and losing whatever real content
+     * was present).
+     */
+    protected function ensureMinimumDescriptionLength(string $description, string $title, ?string $company, ?string $location): string
+    {
+        $wordCount = str_word_count(strip_tags($description));
+
+        if ($wordCount >= 15) {
+            return $description;
+        }
+
+        $extra = $this->generateFallbackDescription($title, $company, $location);
+
+        return trim(strip_tags($description)) !== ''
+            ? $description . $extra
+            : $extra;
     }
 
     protected function generateFallbackDescription(string $title, ?string $company, ?string $location): string
