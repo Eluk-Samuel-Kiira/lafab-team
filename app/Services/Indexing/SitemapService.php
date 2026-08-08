@@ -148,7 +148,7 @@ class SitemapService
         $staticPages = [
             ['url' => '/', 'freq' => 'daily', 'priority' => '1.0'],
             ['url' => '/jobs', 'freq' => 'hourly', 'priority' => '0.9'],
-            ['url' => '/companies', 'freq' => 'daily', 'priority' => '0.8'],
+            ['url' => '/employers', 'freq' => 'daily', 'priority' => '0.8'],
             ['url' => '/employers/newest-jobs', 'freq' => 'daily', 'priority' => '0.8'],
             ['url' => '/employers/newest-jobs/job-categories/newest-jobs', 'freq' => 'daily', 'priority' => '0.7'],
             ['url' => '/about', 'freq' => 'monthly', 'priority' => '0.5'],
