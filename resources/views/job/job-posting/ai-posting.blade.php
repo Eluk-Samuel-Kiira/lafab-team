@@ -369,16 +369,13 @@
                 <div class="card-body pt-0">
                     <div class="row g-2" data-kt-buttons="true" data-kt-buttons-target="[data-kt-button='true']">
                         @php
-                            $countries = [
-                                'AU' => ['name' => 'Australia', 'flag' => '🇦🇺'],
-                                'UG' => ['name' => 'Uganda', 'flag' => '🇺🇬'],
-                                'KE' => ['name' => 'Kenya', 'flag' => '🇰🇪'],
-                                'TZ' => ['name' => 'Tanzania', 'flag' => '🇹🇿'],
-                                'RW' => ['name' => 'Rwanda', 'flag' => '🇷🇼'],
-                                'MW' => ['name' => 'Malawi', 'flag' => '🇲🇼'],
-                                'ZM' => ['name' => 'Zambia', 'flag' => '🇿🇲'],
-                                'SG' => ['name' => 'Singapore', 'flag' => '🇸🇬'],
-                            ];
+                            $countries = [];
+                            foreach(\App\Helpers\CountryHelper::getActiveCountries() as $country) {
+                                $countries[$country->code] = [
+                                    'name' => $country->name,
+                                    'flag' => $country->flag_emoji,
+                                ];
+                            }
                         @endphp
                         @foreach($countries as $code => $info)
                             <div class="col-6 col-md-3">

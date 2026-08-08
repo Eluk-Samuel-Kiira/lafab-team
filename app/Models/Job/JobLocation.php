@@ -9,70 +9,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use App\Models\Job\JobPost;
 use App\Models\Job\Company;
+use App\Helpers\CountryHelper;
 
 class JobLocation extends Model
 {
     use HasFactory;
-
-    // Country codes mapping to full names and metadata - Only AU, UG, KE, TZ, RW, ZA, SG
-    const COUNTRY_DATA = [
-        'AU' => [
-            'name' => 'Australia',
-            'region' => 'Oceania',
-            'timezone' => 'Australia/Sydney',
-            'currency' => 'AUD',
-            'default_lat' => -25.2744,
-            'default_lng' => 133.7751,
-        ],
-        'UG' => [
-            'name' => 'Uganda',
-            'region' => 'East Africa',
-            'timezone' => 'Africa/Kampala',
-            'currency' => 'UGX',
-            'default_lat' => 1.3733,
-            'default_lng' => 32.2903,
-        ],
-        'KE' => [
-            'name' => 'Kenya',
-            'region' => 'East Africa',
-            'timezone' => 'Africa/Nairobi',
-            'currency' => 'KES',
-            'default_lat' => -1.2921,
-            'default_lng' => 36.8219,
-        ],
-        'TZ' => [
-            'name' => 'Tanzania',
-            'region' => 'East Africa',
-            'timezone' => 'Africa/Dar_es_Salaam',
-            'currency' => 'TZS',
-            'default_lat' => -6.7924,
-            'default_lng' => 39.2083,
-        ],
-        'RW' => [
-            'name' => 'Rwanda',
-            'region' => 'East Africa',
-            'timezone' => 'Africa/Kigali',
-            'currency' => 'RWF',
-            'default_lat' => -1.9441,
-            'default_lng' => 30.0619,
-        ],
-        'ZA' => [
-            'name' => 'South Africa',
-            'region' => 'Southern Africa',
-            'timezone' => 'Africa/Johannesburg',
-            'currency' => 'ZAR',
-            'default_lat' => -30.5595,
-            'default_lng' => 22.9375,
-        ],
-        'SG' => [
-            'name' => 'Singapore',
-            'region' => 'Southeast Asia',
-            'timezone' => 'Asia/Singapore',
-            'currency' => 'SGD',
-            'default_lat' => 1.3521,
-            'default_lng' => 103.8198,
-        ],
-    ];
 
     // Major cities coordinates for precise location data
     const CITIES_DATA = [
@@ -135,7 +76,6 @@ class JobLocation extends Model
     ];
 
     protected $fillable = [
-        'country',
         'country_code',
         'district',
         'city',
@@ -162,19 +102,19 @@ class JobLocation extends Model
     ];
 
     /**
-     * Get all available countries
+     * Get all available countries from CountryHelper
      */
     public static function getAvailableCountries(): array
     {
-        return self::COUNTRY_DATA;
+        return CountryHelper::getCountriesWithFlags();
     }
 
     /**
-     * Get full country name from country code
+     * Get full country name from CountryHelper
      */
     public function getCountryNameAttribute(): string
     {
-        return self::COUNTRY_DATA[$this->country]['name'] ?? $this->country;
+        return CountryHelper::getCountryName($this->country_code);
     }
 
     /**
@@ -182,48 +122,47 @@ class JobLocation extends Model
      */
     public function getCountryCodeLowerAttribute(): string
     {
-        return strtolower($this->country);
+        return strtolower($this->country_code);
     }
 
     /**
-     * Get region
+     * Get region from CountryHelper
      */
     public function getRegionNameAttribute(): string
     {
-        return self::COUNTRY_DATA[$this->country]['region'] ?? 'Africa';
+        return CountryHelper::getRegion($this->country_code);
     }
 
     /**
-     * Get timezone
+     * Get timezone from CountryHelper
      */
     public function getTimezoneNameAttribute(): string
     {
-        return self::COUNTRY_DATA[$this->country]['timezone'] ?? 'Africa/Nairobi';
+        return CountryHelper::getTimezone($this->country_code);
     }
 
     /**
-     * Get currency
+     * Get currency from CountryHelper
      */
     public function getCurrencyAttribute(): string
     {
-        return self::COUNTRY_DATA[$this->country]['currency'] ?? 'USD';
+        return CountryHelper::getCountryCurrency($this->country_code);
     }
 
     /**
-     * Get flag emoji
+     * Get flag emoji from CountryHelper
      */
     public function getFlagAttribute(): string
     {
-        $flags = [
-            'AU' => '🇦🇺',
-            'UG' => '🇺🇬',
-            'KE' => '🇰🇪',
-            'TZ' => '🇹🇿',
-            'RW' => '🇷🇼',
-            'ZA' => '🇿🇦',
-            'SG' => '🇸🇬',
-        ];
-        return $flags[$this->country] ?? '🌍';
+        return CountryHelper::getCountryFlag($this->country_code);
+    }
+
+    /**
+     * Get the country model relationship
+     */
+    public function country()
+    {
+        return $this->belongsTo(Country::class, 'country_code', 'code');
     }
 
     /**
@@ -231,7 +170,7 @@ class JobLocation extends Model
      */
     public function getUrlAttribute(): string
     {
-        $countryCode = strtolower($this->country);
+        $countryCode = strtolower($this->country_code);
         return url("/{$countryCode}/jobs/location/{$this->slug}");
     }
 
@@ -242,7 +181,7 @@ class JobLocation extends Model
     {
         $tags = [];
         $baseUrl = config('app.url');
-        $countryCode = strtolower($this->country);
+        $countryCode = strtolower($this->country_code);
         
         $tags[] = [
             'rel' => 'alternate',
@@ -312,17 +251,20 @@ class JobLocation extends Model
             }
         }
         
-        // If still no coordinates, use country default
-        if (!$this->latitude && isset(self::COUNTRY_DATA[$this->country])) {
-            $this->latitude = self::COUNTRY_DATA[$this->country]['default_lat'];
-            $this->longitude = self::COUNTRY_DATA[$this->country]['default_lng'];
+        // If still no coordinates, use country default from CountryHelper
+        if (!$this->latitude) {
+            $country = CountryHelper::getCountry($this->country_code);
+            if ($country) {
+                $this->latitude = $country->default_lat;
+                $this->longitude = $country->default_lng;
+            }
         }
     }
 
     // Scopes
     public function scopeByCountry($query, $countryCode)
     {
-        return $query->where('country', $countryCode);
+        return $query->where('country_code', $countryCode);
     }
 
     public function scopeActive($query)
@@ -360,26 +302,29 @@ class JobLocation extends Model
         parent::boot();
 
         static::creating(function ($location) {
-            // FORCE country_code from country if not set
-            if (empty($location->country_code) && !empty($location->country)) {
-                $location->country_code = $location->country;
-            }
-            
             // Generate slug
             if (empty($location->slug)) {
-                $countryCode = strtolower($location->country);
+                $countryCode = strtolower($location->country_code);
                 $districtSlug = Str::slug($location->district ?? $location->city ?? 'jobs');
                 $location->slug = "{$districtSlug}-jobs-in-{$countryCode}";
+                
+                // Ensure uniqueness
+                $slug = $location->slug;
+                $counter = 1;
+                while (static::where('slug', $slug)->exists()) {
+                    $slug = $location->slug . '-' . $counter++;
+                }
+                $location->slug = $slug;
             }
             
-            // Set region from country data
-            if (empty($location->region) && isset(self::COUNTRY_DATA[$location->country])) {
-                $location->region = self::COUNTRY_DATA[$location->country]['region'];
+            // Set region from CountryHelper
+            if (empty($location->region)) {
+                $location->region = CountryHelper::getRegion($location->country_code);
             }
             
-            // Set timezone from country data
-            if (empty($location->timezone) && isset(self::COUNTRY_DATA[$location->country])) {
-                $location->timezone = self::COUNTRY_DATA[$location->country]['timezone'];
+            // Set timezone from CountryHelper
+            if (empty($location->timezone)) {
+                $location->timezone = CountryHelper::getTimezone($location->country_code);
             }
             
             // Auto-set coordinates
@@ -408,25 +353,20 @@ class JobLocation extends Model
         });
         
         static::updating(function ($location) {
-            // FORCE country_code update if country changes
-            if ($location->isDirty('country') && !empty($location->country)) {
-                $location->country_code = $location->country;
-            }
-            
             // Update coordinates if district/city changed
-            if ($location->isDirty('district') || $location->isDirty('city') || $location->isDirty('country')) {
+            if ($location->isDirty('district') || $location->isDirty('city') || $location->isDirty('country_code')) {
                 $location->setCoordinatesFromCity();
             }
             
             // Update region if country changed
-            if ($location->isDirty('country') && isset(self::COUNTRY_DATA[$location->country])) {
-                $location->region = self::COUNTRY_DATA[$location->country]['region'];
-                $location->timezone = self::COUNTRY_DATA[$location->country]['timezone'];
+            if ($location->isDirty('country_code')) {
+                $location->region = CountryHelper::getRegion($location->country_code);
+                $location->timezone = CountryHelper::getTimezone($location->country_code);
             }
             
             // Update slug if district changed
-            if ($location->isDirty('district') || $location->isDirty('country')) {
-                $countryCode = strtolower($location->country);
+            if ($location->isDirty('district') || $location->isDirty('country_code')) {
+                $countryCode = strtolower($location->country_code);
                 $districtSlug = Str::slug($location->district ?? $location->city ?? 'jobs');
                 $location->slug = "{$districtSlug}-jobs-in-{$countryCode}";
             }

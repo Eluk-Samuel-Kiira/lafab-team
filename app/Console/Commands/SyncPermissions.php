@@ -34,18 +34,13 @@ class SyncPermissions extends Command
             // ============================================================
             // JOBS REPORTS PERMISSIONS
             // ============================================================
-            'view jobs reports',
-            'view job summary',
-            'view job category report',
-            'view job company report',
-            'view job location report',
-            'view job source report',
-            'view job performance',
-            'view job seo',
             'view job trends',
             'view job country report',
             'view job poster report',
-            'view job timeline',
+            'view countries',
+            'create countries',
+            'edit countries',
+            'delete countries',
 
             // ============================================================
             // Add more permissions here as needed

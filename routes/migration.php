@@ -103,7 +103,27 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
         ->name('admin.experience-levels.toggle-status');
 });
 
-
+Route::prefix('admin')->middleware(['auth'])->group(function () {
+    // Countries
+    Route::get('/countries', [App\Http\Controllers\Job\Setting\CountryController::class, 'index'])
+        ->name('admin.countries');
+    Route::get('/countries/data', [App\Http\Controllers\Job\Setting\CountryController::class, 'getData'])
+        ->name('admin.countries.data');
+    Route::get('/countries/active', [App\Http\Controllers\Job\Setting\CountryController::class, 'getActiveCountries'])
+        ->name('admin.countries.active');
+    Route::get('/countries/{id}', [App\Http\Controllers\Job\Setting\CountryController::class, 'show'])
+        ->name('admin.countries.show');
+    Route::post('/countries', [App\Http\Controllers\Job\Setting\CountryController::class, 'store'])
+        ->name('admin.countries.store');
+    Route::put('/countries/{id}', [App\Http\Controllers\Job\Setting\CountryController::class, 'update'])
+        ->name('admin.countries.update');
+    Route::post('/countries/{id}', [App\Http\Controllers\Job\Setting\CountryController::class, 'update'])
+        ->name('admin.countries.update-post');
+    Route::delete('/countries/{id}', [App\Http\Controllers\Job\Setting\CountryController::class, 'destroy'])
+        ->name('admin.countries.destroy');
+    Route::post('/countries/{id}/toggle-status', [App\Http\Controllers\Job\Setting\CountryController::class, 'toggleStatus'])
+        ->name('admin.countries.toggle-status');
+});
 
 Route::prefix('admin')->middleware(['auth'])->group(function () {
     // Job Types

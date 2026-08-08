@@ -26,19 +26,32 @@
                     </div>
 
                     <div class="row mb-7">
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label class="required fw-semibold fs-6 mb-2">Country</label>
                             <select class="form-select form-select-solid" name="country_code" id="edit_job_country_code" required>
                                 <option value="AU">🇦🇺 Australia</option>
-                                <option value="UG">🇺🇬 Uganda</option>
-                                <option value="KE">🇰🇪 Kenya</option>
-                                <option value="TZ">🇹🇿 Tanzania</option>
-                                <option value="RW">🇷🇼 Rwanda</option>
-                                <option value="ZA">🇿🇦 South Africa</option>
-                                <option value="SG">🇸🇬 Singapore</option>
+                                @foreach(\App\Helpers\CountryHelper::getCountriesWithFlags() as $country)
+                                    <option value="{{ $country['code'] }}">
+                                        {{ $country['flag'] }} {{ $country['name'] }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="required fw-semibold fs-6 mb-2">Job Source</label>
+                            <select name="job_source" id="edit_job_source" class="form-select form-select-solid" required>
+                                <option value="">— Select —</option>
+                                <option value="competitor_website">Competitor Website</option>
+                                <option value="whatsapp">WhatsApp</option>
+                                <option value="newspaper">Newspaper</option>
+                                <option value="employer_website">Employer Website</option>
+                                <option value="linkedin">LinkedIn</option>
+                                <option value="facebook">Facebook</option>
+                                <option value="other">Other</option>
                             </select>
                         </div>
                     </div>
+
                     
                     <div class="row mb-7">
                         <div class="col-md-6">
@@ -189,25 +202,25 @@
                         <div id="edit_description_editor_container"></div>
                         <input type="hidden" name="job_description" id="edit_description_hidden">
                     </div>
-                    
+
                     <div class="fv-row mb-7">
                         <label class="fw-semibold fs-6 mb-2">Responsibilities</label>
                         <div id="edit_responsibilities_editor_container"></div>
                         <input type="hidden" name="responsibilities" id="edit_responsibilities_hidden">
                     </div>
-                    
+
                     <div class="fv-row mb-7">
                         <label class="fw-semibold fs-6 mb-2">Skills</label>
                         <div id="edit_skills_editor_container"></div>
                         <input type="hidden" name="skills" id="edit_skills_hidden">
                     </div>
-                    
+
                     <div class="fv-row mb-7">
                         <label class="fw-semibold fs-6 mb-2">Qualifications</label>
                         <div id="edit_qualifications_editor_container"></div>
                         <input type="hidden" name="qualifications" id="edit_qualifications_hidden">
                     </div>
-                    
+
                     <div class="fv-row mb-7">
                         <label class="fw-semibold fs-6 mb-2">Application Procedure</label>
                         <div id="edit_application_editor_container"></div>

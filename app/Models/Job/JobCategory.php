@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\User;
 use App\Models\Job\JobPost;
+use App\Helpers\CountryHelper;
 
 class JobCategory extends Model
 {
@@ -96,19 +97,27 @@ class JobCategory extends Model
 
     public function getCountryNameAttribute()
     {
-        $countries = [
-            'AU' => 'Australia',
-            'KE' => 'Kenya',
-            'UG' => 'Uganda',
-            'RW' => 'Rwanda',
-            'TZ' => 'Tanzania',
-            'US' => 'United States',
-            'UK' => 'United Kingdom',
-            'CA' => 'Canada',
-            'NG' => 'Nigeria',
-            'ZA' => 'South Africa',
-            'GH' => 'Ghana',
-        ];
-        return $countries[$this->country_code] ?? $this->country_code;
+        return CountryHelper::getCountryName($this->country_code);
+    }
+
+    public function getCountryFlagAttribute()
+    {
+        return CountryHelper::getCountryFlag($this->country_code);
+    }
+
+    public function getDisplayNameAttribute()
+    {
+        $flag = $this->country_flag;
+        return "{$flag} {$this->name} ({$this->country_code})";
+    }
+
+    public function getCountryCurrencyAttribute()
+    {
+        return CountryHelper::getCountryCurrency($this->country_code);
+    }
+
+    public function getPhoneCodeAttribute()
+    {
+        return CountryHelper::getPhoneCode($this->country_code);
     }
 }

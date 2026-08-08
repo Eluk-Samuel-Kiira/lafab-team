@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use App\Helpers\CountryHelper;
 
 class EducationLevel extends Model
 {
@@ -27,32 +28,6 @@ class EducationLevel extends Model
         'is_active' => 'boolean',
     ];
 
-    // Country display names
-    protected const COUNTRY_NAMES = [
-        'AU' => 'Australia',
-        'UG' => 'Uganda',
-        'KE' => 'Kenya',
-        'TZ' => 'Tanzania',
-        'RW' => 'Rwanda',
-        'ZA' => 'South Africa',
-        'ZM' => 'Zambia',
-        'MW' => 'Malawi',
-        'SG' => 'Singapore',
-    ];
-
-    // Country flags
-    protected const COUNTRY_FLAGS = [
-        'AU' => '🇦🇺',
-        'UG' => '🇺🇬',
-        'KE' => '🇰🇪',
-        'TZ' => '🇹🇿',
-        'RW' => '🇷🇼',
-        'ZA' => '🇿🇦',
-        'ZM' => '🇿🇲',
-        'MW' => '🇲🇼',
-        'SG' => '🇸🇬',
-    ];
-
     protected static function boot()
     {
         parent::boot();
@@ -60,7 +35,6 @@ class EducationLevel extends Model
         static::creating(function ($educationLevel) {
             if (empty($educationLevel->slug)) {
                 $educationLevel->slug = Str::slug($educationLevel->name . '-' . $educationLevel->country_code);
-                // Ensure uniqueness
                 $slug = $educationLevel->slug;
                 $counter = 1;
                 while (static::where('slug', $slug)->exists()) {
@@ -70,7 +44,7 @@ class EducationLevel extends Model
             }
             
             if (empty($educationLevel->meta_title)) {
-                $countryName = self::getCountryName($educationLevel->country_code);
+                $countryName = CountryHelper::getCountryName($educationLevel->country_code);
                 $educationLevel->meta_title = "{$educationLevel->name} Jobs in {$countryName} - Education Requirements";
             }
             
@@ -81,34 +55,27 @@ class EducationLevel extends Model
     }
 
     /**
-     * Get country name
+     * Get country name using CountryHelper
      */
     public static function getCountryName(string $countryCode): string
     {
-        return self::COUNTRY_NAMES[strtoupper($countryCode)] ?? $countryCode;
+        return CountryHelper::getCountryName($countryCode);
     }
 
     /**
-     * Get country flag
+     * Get country flag using CountryHelper
      */
     public static function getCountryFlag(string $countryCode): string
     {
-        return self::COUNTRY_FLAGS[strtoupper($countryCode)] ?? '🌍';
+        return CountryHelper::getCountryFlag($countryCode);
     }
 
     /**
-     * Get all available countries
+     * Get all available countries using CountryHelper
      */
     public static function getAvailableCountries(): array
     {
-        $countries = [];
-        foreach (self::COUNTRY_NAMES as $code => $name) {
-            $countries[$code] = [
-                'name' => $name,
-                'flag' => self::COUNTRY_FLAGS[$code] ?? '🌍',
-            ];
-        }
-        return $countries;
+        return CountryHelper::getCountriesWithFlags();
     }
 
     // Scopes
@@ -131,12 +98,12 @@ class EducationLevel extends Model
     // Accessors
     public function getCountryNameAttribute()
     {
-        return self::getCountryName($this->country_code);
+        return CountryHelper::getCountryName($this->country_code);
     }
 
     public function getCountryFlagAttribute()
     {
-        return self::getCountryFlag($this->country_code);
+        return CountryHelper::getCountryFlag($this->country_code);
     }
 
     public function getDisplayNameAttribute()

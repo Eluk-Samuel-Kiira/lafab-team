@@ -5,6 +5,7 @@ namespace App\Models\Job;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use App\Helpers\CountryHelper;
 
 class SalaryRange extends Model
 {
@@ -28,49 +29,6 @@ class SalaryRange extends Model
         'is_active' => 'boolean',
     ];
 
-    // Country currency mapping
-    protected const COUNTRY_CURRENCY = [
-        'AU' => 'AUD',
-        'UG' => 'UGX',
-        'KE' => 'KES',
-        'TZ' => 'TZS',
-        'RW' => 'RWF',
-        'ZA' => 'ZAR',
-        'ZM' => 'ZMW',
-        'MW' => 'MWK',
-        'SG' => 'SGD',
-        'NG' => 'NGN',
-        'GH' => 'GHS',
-        'ET' => 'ETB',
-        'EG' => 'EGP',
-    ];
-
-    // Country display names
-    protected const COUNTRY_NAMES = [
-        'AU' => 'Australia',
-        'UG' => 'Uganda',
-        'KE' => 'Kenya',
-        'TZ' => 'Tanzania',
-        'RW' => 'Rwanda',
-        'ZA' => 'South Africa',
-        'ZM' => 'Zambia',
-        'MW' => 'Malawi',
-        'SG' => 'Singapore',
-    ];
-
-    // Country flags
-    protected const COUNTRY_FLAGS = [
-        'AU' => '🇦🇺',
-        'UG' => '🇺🇬',
-        'KE' => '🇰🇪',
-        'TZ' => '🇹🇿',
-        'RW' => '🇷🇼',
-        'ZA' => '🇿🇦',
-        'ZM' => '🇿🇲',
-        'MW' => '🇲🇼',
-        'SG' => '🇸🇬',
-    ];
-
     protected static function boot()
     {
         parent::boot();
@@ -78,7 +36,6 @@ class SalaryRange extends Model
         static::creating(function ($salaryRange) {
             if (empty($salaryRange->slug)) {
                 $salaryRange->slug = Str::slug($salaryRange->name);
-                // Ensure uniqueness
                 $slug = $salaryRange->slug;
                 $counter = 1;
                 while (static::where('slug', $slug)->exists()) {
@@ -93,16 +50,24 @@ class SalaryRange extends Model
             
             // Set default currency based on country if not set
             if (empty($salaryRange->currency) && !empty($salaryRange->country_code)) {
-                $salaryRange->currency = self::getCurrencyForCountry($salaryRange->country_code);
+                $salaryRange->currency = CountryHelper::getCountryCurrency($salaryRange->country_code);
             }
         });
 
         static::updating(function ($salaryRange) {
-            // Update currency if country changes and currency is not manually set
             if ($salaryRange->isDirty('country_code') && !$salaryRange->isDirty('currency')) {
-                $salaryRange->currency = self::getCurrencyForCountry($salaryRange->country_code);
+                $salaryRange->currency = CountryHelper::getCountryCurrency($salaryRange->country_code);
             }
         });
+    }
+
+    /**
+     * Get currency symbol from database
+     */
+    public function getCurrencySymbolAttribute(): string
+    {
+        $country = CountryHelper::getCountry($this->country_code);
+        return $country?->currency_symbol ?? $this->currency ?? '$';
     }
 
     /**
@@ -110,7 +75,7 @@ class SalaryRange extends Model
      */
     public static function getCurrencyForCountry(string $countryCode): string
     {
-        return self::COUNTRY_CURRENCY[strtoupper($countryCode)] ?? 'USD';
+        return CountryHelper::getCountryCurrency($countryCode);
     }
 
     /**
@@ -118,7 +83,7 @@ class SalaryRange extends Model
      */
     public static function getCountryName(string $countryCode): string
     {
-        return self::COUNTRY_NAMES[strtoupper($countryCode)] ?? $countryCode;
+        return CountryHelper::getCountryName($countryCode);
     }
 
     /**
@@ -126,7 +91,7 @@ class SalaryRange extends Model
      */
     public static function getCountryFlag(string $countryCode): string
     {
-        return self::COUNTRY_FLAGS[strtoupper($countryCode)] ?? '🌍';
+        return CountryHelper::getCountryFlag($countryCode);
     }
 
     /**
@@ -134,14 +99,26 @@ class SalaryRange extends Model
      */
     public static function getAvailableCountries(): array
     {
+        return CountryHelper::getCountriesWithFlags();
+    }
+
+    /**
+     * Get all available countries with currency
+     */
+    public static function getAvailableCountriesWithCurrency(): array
+    {
         $countries = [];
-        foreach (self::COUNTRY_CURRENCY as $code => $currency) {
-            $countries[$code] = [
-                'name' => self::COUNTRY_NAMES[$code] ?? $code,
-                'flag' => self::COUNTRY_FLAGS[$code] ?? '🌍',
-                'currency' => $currency,
+        $allCountries = CountryHelper::getActiveCountries();
+        
+        foreach ($allCountries as $country) {
+            $countries[$country->code] = [
+                'name' => $country->name,
+                'flag' => $country->flag_emoji,
+                'currency' => $country->currency,
+                'currency_symbol' => $country->currency_symbol,
             ];
         }
+        
         return $countries;
     }
 
@@ -181,7 +158,7 @@ class SalaryRange extends Model
     public function getDisplayNameAttribute()
     {
         if ($this->min_salary && $this->max_salary) {
-            $flag = self::getCountryFlag($this->country_code);
+            $flag = $this->country_flag;
             return "{$flag} {$this->name} ({$this->currency})";
         }
         return $this->name;
@@ -189,14 +166,13 @@ class SalaryRange extends Model
 
     public function getFormattedRangeAttribute()
     {
+        $symbol = $this->currency_symbol;
+        
         if ($this->min_salary && $this->max_salary) {
-            $symbol = $this->getCurrencySymbol($this->currency);
             return "{$symbol}{$this->min_salary} - {$symbol}{$this->max_salary} {$this->currency}";
         } elseif ($this->min_salary) {
-            $symbol = $this->getCurrencySymbol($this->currency);
             return "{$symbol}{$this->min_salary}+ {$this->currency}";
         } elseif ($this->max_salary) {
-            $symbol = $this->getCurrencySymbol($this->currency);
             return "Up to {$symbol}{$this->max_salary} {$this->currency}";
         }
         return "Negotiable";
@@ -204,12 +180,12 @@ class SalaryRange extends Model
 
     public function getCountryNameAttribute()
     {
-        return self::getCountryName($this->country_code);
+        return CountryHelper::getCountryName($this->country_code);
     }
 
     public function getCountryFlagAttribute()
     {
-        return self::getCountryFlag($this->country_code);
+        return CountryHelper::getCountryFlag($this->country_code);
     }
 
     public function getSeoAttributes()
@@ -225,32 +201,6 @@ class SalaryRange extends Model
     public function getUrlAttribute()
     {
         return url("/{$this->country_code}/salary/{$this->slug}");
-    }
-
-    /**
-     * Get currency symbol
-     */
-    private function getCurrencySymbol($currency)
-    {
-        $symbols = [
-            'USD' => '$',
-            'EUR' => '€',
-            'GBP' => '£',
-            'AUD' => 'A$',
-            'UGX' => 'USh',
-            'KES' => 'KSh',
-            'TZS' => 'TSh',
-            'RWF' => 'FRw',
-            'ZAR' => 'R',
-            'ZMW' => 'ZK',
-            'MWK' => 'MK',
-            'SGD' => 'S$',
-            'NGN' => '₦',
-            'GHS' => 'GH₵',
-            'ETB' => 'Br',
-            'EGP' => 'E£',
-        ];
-        return $symbols[$currency] ?? $currency;
     }
 
     // Relationships

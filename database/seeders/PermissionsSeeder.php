@@ -99,6 +99,11 @@ class PermissionsSeeder extends Seeder
             'view job trends',
             'view job country report',
             'view job poster report',
+            'view job poster report',
+            'view countries',
+            'create countries',
+            'edit countries',
+            'delete countries',
 
             // ============================================================
             // CANDIDATES / JOB SEEKERS

@@ -32,15 +32,11 @@
             <div>
                 <select id="countryFilter" class="form-select form-select-solid w-150px">
                     <option value="">All Countries</option>
-                    <option value="AU">🇦🇺 Australia</option>
-                    <option value="UG">🇺🇬 Uganda</option>
-                    <option value="KE">🇰🇪 Kenya</option>
-                    <option value="TZ">🇹🇿 Tanzania</option>
-                    <option value="RW">🇷🇼 Rwanda</option>
-                    <option value="ZM">🇿🇲 Zambia</option>
-                    <option value="MW">🇲🇼 Malawi</option>
-                    <option value="SG">🇸🇬 Singapore</option>
-                    <option value="ZA">🇿🇦 South Africa</option>
+                    @foreach(\App\Helpers\CountryHelper::getCountriesWithFlags() as $country)
+                        <option value="{{ $country['code'] }}">
+                            {{ $country['flag'] }} {{ $country['name'] }}
+                        </option>
+                    @endforeach
                 </select>
             </div>
         </div>
@@ -122,31 +118,23 @@
                             <label class="required fw-semibold fs-6 mb-2">Country</label>
                             <select class="form-select form-select-solid" name="country_code" id="add_country_code" required>
                                 <option value="">Select Country</option>
-                                <option value="AU">🇦🇺 Australia</option>
-                                <option value="UG">🇺🇬 Uganda</option>
-                                <option value="KE">🇰🇪 Kenya</option>
-                                <option value="TZ">🇹🇿 Tanzania</option>
-                                <option value="RW">🇷🇼 Rwanda</option>
-                                <option value="ZM">🇿🇲 Zambia</option>
-                                <option value="MW">🇲🇼 Malawi</option>
-                                <option value="SG">🇸🇬 Singapore</option>
-                                <option value="ZA">🇿🇦 South Africa</option>
+                                @foreach(\App\Helpers\CountryHelper::getCountriesWithFlags() as $country)
+                                    <option value="{{ $country['code'] }}">
+                                        {{ $country['flag'] }} {{ $country['name'] }}
+                                    </option>
+                                @endforeach
                             </select>
                         </div>
                         <div class="col-md-6">
                             <label class="fw-semibold fs-6 mb-2">Currency</label>
                             <select class="form-select form-select-solid" name="currency" id="add_currency">
                                 <option value="">Auto-detect from country</option>
-                                <option value="AUD">AUD</option>
-                                <option value="UGX">UGX</option>
-                                <option value="KES">KES</option>
-                                <option value="TZS">TZS</option>
-                                <option value="RWF">RWF</option>
-                                <option value="ZMW">ZMW</option>
-                                <option value="MWK">MWK</option>
-                                <option value="SGD">SGD</option>
-                                <option value="ZAR">ZAR</option>
-                                <option value="USD">USD</option>
+                                @foreach(\App\Helpers\CountryHelper::getActiveCountries() as $country)
+                                    <option value="{{ $country->currency }}" {{ ($selectedCurrency ?? '') == $country->currency ? 'selected' : '' }}>
+                                        {{ $country->currency }} ({{ $country->currency_symbol }})
+                                    </option>
+                                @endforeach
+                                <option value="USD">USD ($)</option>
                             </select>
                         </div>
                     </div>
@@ -224,31 +212,22 @@
                             <label class="required fw-semibold fs-6 mb-2">Country</label>
                             <select class="form-select form-select-solid" name="country_code" id="edit_country_code" required>
                                 <option value="">Select Country</option>
-                                <option value="AU">🇦🇺 Australia</option>
-                                <option value="UG">🇺🇬 Uganda</option>
-                                <option value="KE">🇰🇪 Kenya</option>
-                                <option value="TZ">🇹🇿 Tanzania</option>
-                                <option value="RW">🇷🇼 Rwanda</option>
-                                <option value="ZM">🇿🇲 Zambia</option>
-                                <option value="MW">🇲🇼 Malawi</option>
-                                <option value="SG">🇸🇬 Singapore</option>
-                                <option value="ZA">🇿🇦 South Africa</option>
+                                @foreach(\App\Helpers\CountryHelper::getCountriesWithFlags() as $country)
+                                    <option value="{{ $country['code'] }}">
+                                        {{ $country['flag'] }} {{ $country['name'] }}
+                                    </option>
+                                @endforeach
                             </select>
                         </div>
                         <div class="col-md-6">
                             <label class="fw-semibold fs-6 mb-2">Currency</label>
                             <select class="form-select form-select-solid" name="currency" id="edit_currency">
                                 <option value="">Auto-detect from country</option>
-                                <option value="AUD">AUD</option>
-                                <option value="UGX">UGX</option>
-                                <option value="KES">KES</option>
-                                <option value="TZS">TZS</option>
-                                <option value="RWF">RWF</option>
-                                <option value="ZMW">ZMW</option>
-                                <option value="MWK">MWK</option>
-                                <option value="SGD">SGD</option>
-                                <option value="ZAR">ZAR</option>
-                                <option value="USD">USD</option>
+                                @foreach(\App\Helpers\CountryHelper::getCurrencies() as $currency)
+                                    <option value="{{ $currency['code'] }}" {{ ($selectedCurrency ?? '') == $currency['code'] ? 'selected' : '' }}>
+                                        {{ $currency['code'] }} ({{ $currency['symbol'] ?? $currency['code'] }})
+                                    </option>
+                                @endforeach
                             </select>
                         </div>
                     </div>

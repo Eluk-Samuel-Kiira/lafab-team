@@ -310,6 +310,16 @@
                             </tfoot>
                         </table>
                     </div>
+                    
+                    <!-- Pagination -->
+                    <div class="d-flex justify-content-between align-items-center mt-5">
+                        <div class="text-muted fs-7">
+                            Showing {{ $categoryBreakdown->firstItem() ?? 0 }} to {{ $categoryBreakdown->lastItem() ?? 0 }} of {{ $categoryBreakdown->total() }} entries
+                        </div>
+                        <div>
+                            {{ $categoryBreakdown->appends(request()->except('category_page'))->links('pagination::bootstrap-5') }}
+                        </div>
+                    </div>
                 @else
                     <div class="text-center py-5 text-muted">No data available</div>
                 @endif
@@ -356,6 +366,16 @@
                                 </tr>
                             </tfoot>
                         </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <div class="d-flex justify-content-between align-items-center mt-5">
+                        <div class="text-muted fs-7">
+                            Showing {{ $companyBreakdown->firstItem() ?? 0 }} to {{ $companyBreakdown->lastItem() ?? 0 }} of {{ $companyBreakdown->total() }} entries
+                        </div>
+                        <div>
+                            {{ $companyBreakdown->appends(request()->except('company_page'))->links('pagination::bootstrap-5') }}
+                        </div>
                     </div>
                 @else
                     <div class="text-center py-5 text-muted">No data available</div>
@@ -406,6 +426,16 @@
                                 </tr>
                             </tfoot>
                         </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <div class="d-flex justify-content-between align-items-center mt-5">
+                        <div class="text-muted fs-7">
+                            Showing {{ $locationBreakdown->firstItem() ?? 0 }} to {{ $locationBreakdown->lastItem() ?? 0 }} of {{ $locationBreakdown->total() }} entries
+                        </div>
+                        <div>
+                            {{ $locationBreakdown->appends(request()->except('location_page'))->links('pagination::bootstrap-5') }}
+                        </div>
                     </div>
                 @else
                     <div class="text-center py-5 text-muted">No data available</div>
@@ -467,6 +497,16 @@
                             </tfoot>
                         </table>
                     </div>
+                    
+                    <!-- Pagination -->
+                    <div class="d-flex justify-content-between align-items-center mt-5">
+                        <div class="text-muted fs-7">
+                            Showing {{ $sourceBreakdown->firstItem() ?? 0 }} to {{ $sourceBreakdown->lastItem() ?? 0 }} of {{ $sourceBreakdown->total() }} entries
+                        </div>
+                        <div>
+                            {{ $sourceBreakdown->appends(request()->except('source_page'))->links('pagination::bootstrap-5') }}
+                        </div>
+                    </div>
                 @else
                     <div class="text-center py-5 text-muted">No data available</div>
                 @endif
@@ -518,6 +558,16 @@
                                 </tr>
                             </tfoot>
                         </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <div class="d-flex justify-content-between align-items-center mt-5">
+                        <div class="text-muted fs-7">
+                            Showing {{ $dailyBreakdown->firstItem() ?? 0 }} to {{ $dailyBreakdown->lastItem() ?? 0 }} of {{ $dailyBreakdown->total() }} entries
+                        </div>
+                        <div>
+                            {{ $dailyBreakdown->appends(request()->except('daily_page'))->links('pagination::bootstrap-5') }}
+                        </div>
                     </div>
                 @else
                     <div class="text-center py-5 text-muted">No daily data available</div>
@@ -587,87 +637,22 @@
     </div>
 </div>
 
-<!-- Jobs List with Pagination -->
-<div class="row g-5 g-xl-10">
+<!-- Daily Trend Line Chart -->
+<div class="row g-5 g-xl-10 mb-5">
     <div class="col-12">
         <div class="card card-flush shadow-sm">
             <div class="card-header py-3">
-                <h3 class="card-title fs-5 fw-bold">Jobs List</h3>
+                <h3 class="card-title fs-5 fw-bold">Daily Job Posting Trend</h3>
                 <div class="card-toolbar">
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="text-muted fs-7">Per Page:</span>
-                        <select class="form-select form-select-sm w-70px" onchange="window.location.href=this.value">
-                            <option value="{{ request()->fullUrlWithQuery(['per_page' => 10, 'page' => 1]) }}" {{ ($perPage ?? 20) == 10 ? 'selected' : '' }}>10</option>
-                            <option value="{{ request()->fullUrlWithQuery(['per_page' => 20, 'page' => 1]) }}" {{ ($perPage ?? 20) == 20 ? 'selected' : '' }}>20</option>
-                            <option value="{{ request()->fullUrlWithQuery(['per_page' => 50, 'page' => 1]) }}" {{ ($perPage ?? 20) == 50 ? 'selected' : '' }}>50</option>
-                            <option value="{{ request()->fullUrlWithQuery(['per_page' => 100, 'page' => 1]) }}" {{ ($perPage ?? 20) == 100 ? 'selected' : '' }}>100</option>
-                        </select>
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="badge badge-light-primary">Peak: {{ $summary['peak_daily_posts'] ?? 0 }} jobs</span>
+                        <span class="badge badge-light-info">Avg: {{ number_format($summary['avg_daily_posts'] ?? 0, 1) }} jobs/day</span>
+                        <span class="badge badge-light-success">Total: {{ $summary['total_jobs'] ?? 0 }} jobs</span>
                     </div>
                 </div>
             </div>
             <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table align-middle table-row-dashed fs-6 gy-3">
-                        <thead>
-                            <tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
-                                <th>Job Title</th>
-                                <th>Company</th>
-                                <th>Category</th>
-                                <th class="text-center">Views</th>
-                                <th class="text-center">Applications</th>
-                                <th>Created</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($jobs as $job)
-                                <tr>
-                                    <td>
-                                        <span class="fw-bold">{{ Str::limit($job->job_title, 40) }}</span>
-                                    </td>
-                                    <td>{{ $job->company?->name ?? 'N/A' }}</td>
-                                    <td>{{ $job->jobCategory?->name ?? 'N/A' }}</td>
-                                    <td class="text-center">
-                                        <span class="badge badge-light-info">{{ number_format($job->view_count) }}</span>
-                                    </td>
-                                    <td class="text-center">
-                                        <span class="badge badge-light-success">{{ number_format($job->application_count) }}</span>
-                                    </td>
-                                    <td>{{ $job->created_at->format('M d, Y') }}</td>
-                                    <td>
-                                        @if($job->is_active && $job->deadline >= now())
-                                            <span class="badge badge-light-success">Active</span>
-                                        @elseif($job->deadline < now())
-                                            <span class="badge badge-light-secondary">Expired</span>
-                                        @else
-                                            <span class="badge badge-light-danger">Inactive</span>
-                                        @endif
-                                        @if($job->is_featured)
-                                            <span class="badge badge-light-primary">Featured</span>
-                                        @endif
-                                        @if($job->is_urgent)
-                                            <span class="badge badge-light-warning">Urgent</span>
-                                        @endif
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="7" class="text-center text-muted py-5">No jobs found matching the filters</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Pagination -->
-                <div class="d-flex justify-content-between align-items-center mt-5">
-                    <div class="text-muted fs-7">
-                        Showing {{ $jobs->firstItem() ?? 0 }} to {{ $jobs->lastItem() ?? 0 }} of {{ $jobs->total() }} entries
-                    </div>
-                    <div>
-                        {{ $jobs->appends(request()->except('page'))->links('pagination::bootstrap-5') }}
-                    </div>
-                </div>
+                <canvas id="dailyTrendChart" style="width: 100%; height: 350px;"></canvas>
             </div>
         </div>
     </div>
@@ -689,3 +674,166 @@
 </div>
 @endcan
 @endsection
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Daily Trend Chart
+    const ctx = document.getElementById('dailyTrendChart').getContext('2d');
+    const chartLabels = @json($chartLabels);
+    const chartCounts = @json($chartCounts);
+    const chartViews = @json($chartViews);
+    const chartApplications = @json($chartApplications);
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: chartLabels,
+            datasets: [
+                {
+                    label: 'Jobs Posted',
+                    data: chartCounts,
+                    borderColor: '#009ef7',
+                    backgroundColor: 'rgba(0, 158, 247, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#009ef7',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 7,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Views',
+                    data: chartViews,
+                    borderColor: '#50cd89',
+                    backgroundColor: 'rgba(80, 205, 137, 0.05)',
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.4,
+                    pointBackgroundColor: '#50cd89',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 3,
+                    pointHoverRadius: 6,
+                    yAxisID: 'y1'
+                },
+                {
+                    label: 'Applications',
+                    data: chartApplications,
+                    borderColor: '#f1416c',
+                    backgroundColor: 'rgba(241, 65, 108, 0.05)',
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.4,
+                    pointBackgroundColor: '#f1416c',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 3,
+                    pointHoverRadius: 6,
+                    yAxisID: 'y'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        font: {
+                            size: 12,
+                            weight: '600'
+                        },
+                        padding: 20,
+                        usePointStyle: true,
+                        pointStyle: 'circle'
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        title: function(context) {
+                            return 'Date: ' + context[0].label;
+                        },
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            let value = context.raw || 0;
+                            return label + ': ' + value.toLocaleString();
+                        },
+                        footer: function(context) {
+                            let total = 0;
+                            context.forEach(item => {
+                                total += item.raw || 0;
+                            });
+                            return 'Total activity: ' + total;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        maxRotation: 45,
+                        minRotation: 0,
+                        font: {
+                            size: 10
+                        }
+                    }
+                },
+                y: {
+                    position: 'left',
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    ticks: {
+                        font: {
+                            size: 10
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Jobs / Applications',
+                        font: {
+                            size: 11,
+                            weight: '600'
+                        }
+                    }
+                },
+                y1: {
+                    position: 'right',
+                    beginAtZero: true,
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        font: {
+                            size: 10
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Views',
+                        font: {
+                            size: 11,
+                            weight: '600'
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+@endpush

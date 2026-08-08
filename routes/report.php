@@ -39,4 +39,5 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::get('/jobs-reports/country', [JobsReportsController::class, 'byCountry'])->name('admin.jobs-reports.country');
     Route::get('/jobs-reports/export/{type}', [JobsReportsController::class, 'export'])->name('admin.jobs-reports.export');
     Route::get('/jobs-reports/timeline', [JobsReportsController::class, 'byTimeline'])->name('admin.jobs-reports.timeline');
+    Route::get('/jobs-reports/poster-activity', [JobsReportsController::class, 'getPosterActivity'])->name('admin.jobs-reports.poster-activity');
 });

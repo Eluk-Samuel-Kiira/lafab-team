@@ -22,28 +22,23 @@
 <div class="card card-flush">
     <div class="card-header mt-6">
         <div class="card-title">
-            <div class="d-flex align-items-center position-relative my-1 me-5">
-                <i class="ki-duotone ki-magnifier fs-3 position-absolute ms-5">
-                    <span class="path1"></span><span class="path2"></span>
-                </i>
-                <input type="text" id="searchInput" class="form-control form-control-solid w-250px ps-13" placeholder="Search categories..." />
-            </div>
-            <div>
-                <select id="countryFilter" class="form-select form-select-solid w-150px">
-                    <option value="">All Countries</option>
-                    <option value="AU">🇦🇺 Australia</option>
-                    <option value="UG">🇺🇬 Uganda</option>
-                    <option value="KE">🇰🇪 Kenya</option>
-                    <option value="TZ">🇹🇿 Tanzania</option>
-                    <option value="RW">🇷🇼 Rwanda</option>
-                    <option value="ZM">🇿🇲 Zambia</option>
-                    <option value="MW">🇲🇼 Malawi</option>
-                    <option value="SG">🇸🇬 Singapore</option>
-                    <option value="ZA">🇿🇦 South Africa</option>
-                    <option value="NG">🇳🇬 Nigeria</option>
-                </select>
-            </div>
+        <div class="d-flex align-items-center position-relative my-1 me-5">
+            <i class="ki-duotone ki-magnifier fs-3 position-absolute ms-5">
+                <span class="path1"></span><span class="path2"></span>
+            </i>
+            <input type="text" id="searchInput" class="form-control form-control-solid w-250px ps-13" placeholder="Search categories..." />
         </div>
+        <div>
+            <select id="countryFilter" class="form-select form-select-solid w-150px">
+                <option value="">All Countries</option>
+                @foreach(\App\Helpers\CountryHelper::getCountriesWithFlags() as $country)
+                    <option value="{{ $country['code'] }}">
+                        {{ $country['flag'] }} {{ $country['name'] }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+    </div>
         @can('create job categories')
         <div class="card-toolbar">
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#kt_modal_add_category">
@@ -122,16 +117,11 @@
                             <label class="required fw-semibold fs-6 mb-2">Country</label>
                             <select class="form-select form-select-solid" name="country_code" id="add_country_code" required>
                                 <option value="">Select Country</option>
-                                <option value="AU">🇦🇺 Australia</option>
-                                <option value="UG">🇺🇬 Uganda</option>
-                                <option value="KE">🇰🇪 Kenya</option>
-                                <option value="TZ">🇹🇿 Tanzania</option>
-                                <option value="RW">🇷🇼 Rwanda</option>
-                                <option value="ZM">🇿🇲 Zambia</option>
-                                <option value="MW">🇲🇼 Malawi</option>
-                                <option value="SG">🇸🇬 Singapore</option>
-                                <option value="ZA">🇿🇦 South Africa</option>
-                                <option value="NG">🇳🇬 Nigeria</option>
+                                @foreach(\App\Helpers\CountryHelper::getCountriesWithFlags() as $country)
+                                    <option value="{{ $country['code'] }}">
+                                        {{ $country['flag'] }} {{ $country['name'] }}
+                                    </option>
+                                @endforeach
                             </select>
                         </div>
                         <div class="col-md-6">
@@ -265,16 +255,11 @@
                             <label class="required fw-semibold fs-6 mb-2">Country</label>
                             <select class="form-select form-select-solid" name="country_code" id="edit_country_code" required>
                                 <option value="">Select Country</option>
-                                <option value="AU">🇦🇺 Australia</option>
-                                <option value="UG">🇺🇬 Uganda</option>
-                                <option value="KE">🇰🇪 Kenya</option>
-                                <option value="TZ">🇹🇿 Tanzania</option>
-                                <option value="RW">🇷🇼 Rwanda</option>
-                                <option value="ZM">🇿🇲 Zambia</option>
-                                <option value="MW">🇲🇼 Malawi</option>
-                                <option value="SG">🇸🇬 Singapore</option>
-                                <option value="ZA">🇿🇦 South Africa</option>
-                                <option value="NG">🇳🇬 Nigeria</option>
+                                @foreach(\App\Helpers\CountryHelper::getCountriesWithFlags() as $country)
+                                    <option value="{{ $country['code'] }}">
+                                        {{ $country['flag'] }} {{ $country['name'] }}
+                                    </option>
+                                @endforeach
                             </select>
                         </div>
                         <div class="col-md-6">
