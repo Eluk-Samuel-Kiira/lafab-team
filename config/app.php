@@ -123,4 +123,6 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'main_app_url' => env('MAIN_APP_URL', 'http://127.0.0.1:8000'),
+
 ];
