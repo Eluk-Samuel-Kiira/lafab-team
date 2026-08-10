@@ -4,6 +4,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Jobs\{ CountryController,CompanyController, JobController, 
     LocationController, CategoryController };
+    
+use App\Http\Controllers\Api\Pages\PageController;
 
 // ✅ TEST ROUTE
 Route::get('/ping', function () {
@@ -47,6 +49,14 @@ Route::middleware(['verifycountry'])->group(function () {
     Route::get('/locations', [LocationController::class, 'index']);
     Route::get('/locations/{identifier}', [LocationController::class, 'show']);
     Route::get('/locations/{identifier}/jobs', [LocationController::class, 'jobs']);
+
+
+    // Pages routes
+    Route::get('/pages', [PageController::class, 'index']);
+    Route::get('/pages/{slug}', [PageController::class, 'show']);
+    Route::get('/pages/template/{template}', [PageController::class, 'byTemplate']);
+    Route::get('/pages/featured', [PageController::class, 'featured']);
+
 });
 
 // Route to test middleware

@@ -104,6 +104,10 @@ class PermissionsSeeder extends Seeder
             'create countries',
             'edit countries',
             'delete countries',
+            'view pages',
+            'create pages',
+            'edit pages',
+            'delete pages',
 
             // ============================================================
             // CANDIDATES / JOB SEEKERS

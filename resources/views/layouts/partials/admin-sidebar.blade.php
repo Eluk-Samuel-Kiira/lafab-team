@@ -672,10 +672,10 @@
                     {{-- Settings --}}
                     @canany(['view currencies', 'view payment methods', 'view payment sources', 'view payment purposes', 'view departments', 
                             'view job industries', 'view job categories', 'view salary ranges', 'view education levels', 
-                            'view experience levels', 'view job types', 'view countries'])
+                            'view experience levels', 'view job types', 'view countries', 'view pages'])
                     <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.countries*', 'admin.currencies*', 'admin.payment-methods*', 
                         'admin.payment-sources*', 'admin.payment-purposes*', 'admin.departments*','admin.salary-ranges*', 'admin.education-levels*',
-                        'admin.experience-levels*', 'admin.job-types*', 'admin.job-categories*', 'admin.industries*') ? 'show here' : '' }}">
+                        'admin.experience-levels*', 'admin.job-types*', 'admin.job-categories*', 'admin.industries*', 'admin.pages*') ? 'show here' : '' }}">
                         <span class="menu-link">
                             <span class="menu-icon">
                                 <i class="ki-duotone ki-setting-2 fs-2">
@@ -753,9 +753,9 @@
                             
                             {{-- Job Settings --}}
                             @canany(['view job industries', 'view job categories', 'view salary ranges', 'view education levels', 
-                                    'view experience levels', 'view job types', 'view countries'])
+                                    'view experience levels', 'view job types', 'view countries', 'view pages'])
                             <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.countries*', 'admin.salary-ranges*', 'admin.education-levels*',
-                                'admin.experience-levels*', 'admin.job-types*', 'admin.job-categories*', 'admin.industries*') ? 'show here' : '' }}">
+                                'admin.experience-levels*', 'admin.job-types*', 'admin.job-categories*', 'admin.industries*', 'admin.pages*') ? 'show here' : '' }}">
                                 <span class="menu-link">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                     <span class="menu-title">Job Settings</span>
@@ -816,6 +816,14 @@
                                         <a class="menu-link {{ request()->routeIs('admin.job-types*') ? 'active' : '' }}" href="{{ route('admin.job-types') }}">
                                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                             <span class="menu-title">Job Types</span>
+                                        </a>
+                                    </div>
+                                    @endcan
+                                    @can('view pages')
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->routeIs('admin.pages*') ? 'active' : '' }}" href="{{ route('admin.pages') }}">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Front Pages</span>
                                         </a>
                                     </div>
                                     @endcan
