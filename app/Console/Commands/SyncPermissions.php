@@ -37,10 +37,10 @@ class SyncPermissions extends Command
             'view job trends',
             'view job country report',
             'view job poster report',
-            'view countries',
-            'create countries',
-            'edit countries',
-            'delete countries',
+            'view pages',
+            'create pages',
+            'edit pages',
+            'delete pages',
 
             // ============================================================
             // Add more permissions here as needed

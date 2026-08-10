@@ -197,6 +197,31 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
 });
 
 
+use App\Http\Controllers\Job\JobIndex\PagesController;
+
+// Pages Management
+Route::prefix('admin')->middleware(['auth'])->group(function () {
+    // Pages
+    Route::get('/pages', [PagesController::class, 'index'])
+        ->name('admin.pages');
+    Route::get('/pages/data', [PagesController::class, 'getData'])
+        ->name('admin.pages.data');
+    Route::get('/pages/countries', [PagesController::class, 'getCountries'])
+        ->name('admin.pages.countries');
+    Route::get('/pages/{id}', [PagesController::class, 'show'])
+        ->name('admin.pages.show');
+    Route::post('/pages', [PagesController::class, 'store'])
+        ->name('admin.pages.store');
+    Route::put('/pages/{id}', [PagesController::class, 'update'])
+        ->name('admin.pages.update');
+    Route::post('/pages/{id}', [PagesController::class, 'update'])
+        ->name('admin.pages.update-post');
+    Route::delete('/pages/{id}', [PagesController::class, 'destroy'])
+        ->name('admin.pages.destroy');
+    Route::post('/pages/{id}/toggle-status', [PagesController::class, 'toggleStatus'])
+        ->name('admin.pages.toggle-status');
+});
+
 
 // In routes/web.php
 Route::prefix('admin')->middleware(['auth'])->group(function () {

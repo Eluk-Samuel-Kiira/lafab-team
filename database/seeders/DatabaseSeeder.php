@@ -36,6 +36,7 @@ class DatabaseSeeder extends Seeder
             ExperienceLevelSeeder::class,
             EducationLevelSeeder::class,
             JobTypeSeeder::class,
+            PageSeeder::class,
 
         ]);
     }

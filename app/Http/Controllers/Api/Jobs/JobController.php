@@ -190,7 +190,7 @@ class JobController extends Controller
     {
         try {
             $countryCode = $request->input('country_code', 'AU');
-            $limit = $request->input('limit', 6);
+            $limit = $request->input('limit', 10);
 
             $jobs = JobPost::with([
                 'company',
@@ -202,6 +202,10 @@ class JobController extends Controller
             ->where('is_featured', true)
             ->whereNotNull('published_at')
             ->where('published_at', '<=', now())
+            ->where(function($query) {
+                $query->whereNull('featured_until')
+                    ->orWhere('featured_until', '>=', now());
+            })
             ->orderByRaw('(legacy_id IS NULL) DESC')
             ->orderBy('published_at', 'desc')
             ->limit($limit)
