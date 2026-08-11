@@ -87,10 +87,10 @@ class VerifyCountryApiToken
             ], 401);
         }
 
-        Log::info('✅ API token verified successfully', [
-            'country_code' => $countryCode,
-            'ip' => $request->ip(),
-        ]);
+        // Log::info('✅ API token verified successfully', [
+        //     'country_code' => $countryCode,
+        //     'ip' => $request->ip(),
+        // ]);
 
         $request->merge(['country_code' => $countryCode]);
 

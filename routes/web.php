@@ -1,6 +1,7 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\{ ProfileController };
+use App\Http\Controllers\Settings\{ArtisanCommandController };
 use App\Http\Controllers\Admin\{ DashboardController, DepartmentController };
 use Illuminate\Support\Facades\Route;
 
@@ -14,6 +15,11 @@ Route::get('/', [DashboardController::class, 'index'])->name('login');
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('admin.dashboard');
+});
+
+Route::middleware(['auth'])->prefix('admin')->group(function () {
+    Route::get('/artisan',       [ArtisanCommandController::class, 'index'])->name('artisan.index');
+    Route::post('/artisan/run',  [ArtisanCommandController::class, 'run'])->name('artisan.run');
 });
 
 

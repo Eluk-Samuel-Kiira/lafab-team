@@ -34,13 +34,11 @@ class SyncPermissions extends Command
             // ============================================================
             // JOBS REPORTS PERMISSIONS
             // ============================================================
-            'view job trends',
-            'view job country report',
-            'view job poster report',
-            'view pages',
-            'create pages',
-            'edit pages',
-            'delete pages',
+            
+            'view social media platforms',
+            'create social media platforms',
+            'edit social media platforms',
+            'delete social media platforms',
 
             // ============================================================
             // Add more permissions here as needed

@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api\Pages;
 
 use App\Http\Controllers\Controller;
-use App\Models\Job\Page;
+use App\Models\Job\{ Page, SocialMediaPlatform };
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -144,6 +144,95 @@ class PageController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch featured pages'
+            ], 500);
+        }
+    }
+
+        /**
+     * Get featured social media platforms for frontend
+     */
+    public function getFeatured(Request $request)
+    {
+        try {
+            $countryCode = $request->input('country_code', 'AU');
+            $limit = $request->input('limit', 10);
+
+            $platforms = SocialMediaPlatform::active()
+                ->where('is_featured', true)
+                ->where('country_code', $countryCode)
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->limit($limit)
+                ->get();
+
+            $formattedPlatforms = $platforms->map(function($platform) {
+                return [
+                    'id' => $platform->id,
+                    'name' => $platform->name,
+                    'platform' => $platform->platform,
+                    'handle' => $platform->handle,
+                    'url' => $platform->url,
+                    'icon' => $platform->platform_icon,
+                    'color' => $platform->platform_color,
+                    'description' => $platform->description,
+                    'followers_count' => $platform->current_followers,
+                    'is_verified' => $platform->is_verified,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $formattedPlatforms
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Failed to fetch featured platforms: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch featured platforms'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get social media platforms by country
+     */
+    public function getByCountry(Request $request, $countryCode)
+    {
+        try {
+            $platforms = SocialMediaPlatform::active()
+                ->where('country_code', strtoupper($countryCode))
+                ->orderBy('sort_order')
+                ->orderBy('is_featured', 'desc')
+                ->orderBy('name')
+                ->get();
+
+            $formattedPlatforms = $platforms->map(function($platform) {
+                return [
+                    'id' => $platform->id,
+                    'name' => $platform->name,
+                    'platform' => $platform->platform,
+                    'handle' => $platform->handle,
+                    'url' => $platform->url,
+                    'icon' => $platform->platform_icon,
+                    'color' => $platform->platform_color,
+                    'description' => $platform->description,
+                    'followers_count' => $platform->current_followers,
+                    'is_featured' => $platform->is_featured,
+                    'is_verified' => $platform->is_verified,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $formattedPlatforms
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Failed to fetch platforms by country: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch platforms'
             ], 500);
         }
     }
