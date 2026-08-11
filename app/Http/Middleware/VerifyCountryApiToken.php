@@ -26,14 +26,14 @@ class VerifyCountryApiToken
         $countryCode = $request->header('X-Country-Code');
 
         // Log what we found
-        Log::info('🔍 Token resolution', [
-            'from_query' => !empty($request->query('api_key')),
-            'from_bearer' => !empty($request->bearerToken()),
-            'from_custom_header' => !empty($request->header('X-API-KEY')),
-            'token_present' => !empty($token),
-            'country_code' => $countryCode,
-            'token_preview' => $token ? substr($token, 0, 10) . '...' : 'null',
-        ]);
+        // Log::info('🔍 Token resolution', [
+        //     'from_query' => !empty($request->query('api_key')),
+        //     'from_bearer' => !empty($request->bearerToken()),
+        //     'from_custom_header' => !empty($request->header('X-API-KEY')),
+        //     'token_present' => !empty($token),
+        //     'country_code' => $countryCode,
+        //     'token_preview' => $token ? substr($token, 0, 10) . '...' : 'null',
+        // ]);
 
         if (!$token) {
             Log::warning('❌ API token missing', [
