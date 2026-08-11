@@ -384,6 +384,51 @@ Route::prefix('admin/sitemap')->name('admin.sitemap.')->middleware(['auth'])->gr
     Route::get('/stats', [SitemapController::class, 'stats'])->name('stats');
 });
 
-// Public sitemap routes
-Route::get('/sitemaps/{country}/sitemap_index.xml', [SitemapController::class, 'index'])->name('sitemap.index');
-Route::get('/sitemaps/{country}/{filename}', [SitemapController::class, 'show'])->name('sitemap.show');
+
+
+use App\Http\Controllers\Job\JobIndex\SocialMediaPlatformController;
+
+// Social Media Platforms Management
+Route::prefix('admin')->middleware(['auth'])->group(function () {
+    // Main view
+    Route::get('/social-media', [SocialMediaPlatformController::class, 'index'])
+        ->name('admin.social-media');
+    
+    // Data endpoints
+    Route::get('/social-media/data', [SocialMediaPlatformController::class, 'getData'])
+        ->name('admin.social-media.data');
+    Route::get('/social-media/stats', [SocialMediaPlatformController::class, 'getStats'])
+        ->name('admin.social-media.stats');
+    Route::get('/social-media/{id}/details', [SocialMediaPlatformController::class, 'getPlatformDetails'])
+        ->name('admin.social-media.details');
+    
+    // Dropdown data
+    Route::get('/social-media/countries', [SocialMediaPlatformController::class, 'getCountries'])
+        ->name('admin.social-media.countries');
+    Route::get('/social-media/platforms', [SocialMediaPlatformController::class, 'getPlatforms'])
+        ->name('admin.social-media.platforms');
+    
+    // CRUD operations
+    Route::get('/social-media/{id}', [SocialMediaPlatformController::class, 'show'])
+        ->name('admin.social-media.show');
+    Route::post('/social-media', [SocialMediaPlatformController::class, 'store'])
+        ->name('admin.social-media.store');
+    Route::put('/social-media/{id}', [SocialMediaPlatformController::class, 'update'])
+        ->name('admin.social-media.update');
+    Route::post('/social-media/{id}', [SocialMediaPlatformController::class, 'update'])
+        ->name('admin.social-media.update-post');
+    Route::delete('/social-media/{id}', [SocialMediaPlatformController::class, 'destroy'])
+        ->name('admin.social-media.destroy');
+    
+    // Toggle operations
+    Route::post('/social-media/{id}/toggle-status', [SocialMediaPlatformController::class, 'toggleStatus'])
+        ->name('admin.social-media.toggle-status');
+    Route::post('/social-media/{id}/toggle-verified', [SocialMediaPlatformController::class, 'toggleVerified'])
+        ->name('admin.social-media.toggle-verified');
+    Route::post('/social-media/{id}/toggle-featured', [SocialMediaPlatformController::class, 'toggleFeatured'])
+        ->name('admin.social-media.toggle-featured');
+    
+    // Update followers
+    Route::post('/social-media/{id}/update-followers', [SocialMediaPlatformController::class, 'updateFollowers'])
+        ->name('admin.social-media.update-followers');
+});

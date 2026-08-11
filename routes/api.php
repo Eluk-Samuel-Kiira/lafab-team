@@ -57,6 +57,10 @@ Route::middleware(['verifycountry'])->group(function () {
     Route::get('/pages/template/{template}', [PageController::class, 'byTemplate']);
     Route::get('/pages/featured', [PageController::class, 'featured']);
 
+    Route::get('/social-media/featured', [PageController::class, 'getFeatured'])
+    ->name('api.social-media.featured');
+    Route::get('/social-media/country/{countryCode}', [PageController::class, 'getByCountry'])
+        ->name('api.social-media.by-country');
 });
 
 // Route to test middleware

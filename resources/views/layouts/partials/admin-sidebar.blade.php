@@ -156,6 +156,16 @@
                                 </a>
                             </div>
                             @endcan
+                            
+                            {{-- Social Media --}}
+                            @can('view social media platforms')
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->routeIs('admin.social-media*') ? 'active' : '' }}" href="{{ route('admin.social-media') }}">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">Social Media</span>
+                                </a>
+                            </div>
+                            @endcan
 
                         </div>
                     </div>
@@ -837,14 +847,14 @@
 
                     {{-- Database Migration --}}
                     @role('super_admin')
-                    <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.migration*') ? 'show here' : '' }}">
+                    <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('admin.migration*', 'artisan.index*') ? 'show here' : '' }}">
                         <span class="menu-link">
                             <span class="menu-icon">
                                 <i class="ki-duotone ki-abstract-26 fs-2">
                                     <span class="path1"></span><span class="path2"></span>
                                 </i>
                             </span>
-                            <span class="menu-title">Migration</span>
+                            <span class="menu-title">Advanced Settings</span>
                             <span class="menu-arrow"></span>
                         </span>
                         <div class="menu-sub menu-sub-accordion">
@@ -852,6 +862,14 @@
                                 <a class="menu-link {{ request()->routeIs('admin.migration.dashboard*') ? 'active' : '' }}" href="{{ route('admin.migration.dashboard') }}">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                     <span class="menu-title">Database Migration</span>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="menu-sub menu-sub-accordion">
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->routeIs('artisan.index*') ? 'active' : '' }}" href="{{ route('artisan.index') }}">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">Artisan Commands</span>
                                 </a>
                             </div>
                         </div>
