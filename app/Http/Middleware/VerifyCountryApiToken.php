@@ -10,24 +10,37 @@ class VerifyCountryApiToken
 {
     public function handle(Request $request, Closure $next)
     {
-        $token = $request->bearerToken();
+        // Try to get token from multiple sources (prioritize query param for cPanel)
+        $token = $request->query('api_key'); // Check query parameter first
+        
+        // If not found in query, check Authorization header
+        if (!$token) {
+            $token = $request->bearerToken();
+        }
+        
+        // If still not found, check custom header
+        if (!$token) {
+            $token = $request->header('X-API-KEY');
+        }
+
         $countryCode = $request->header('X-Country-Code');
 
-        // Log the incoming request
-        // Log::info('🔐 API Token Verification', [
-        //     'token_present' => !empty($token),
-        //     'country_code_present' => !empty($countryCode),
-        //     'country_code' => $countryCode,
-        //     'token_preview' => $token ? substr($token, 0, 20) . '...' : 'null',
-        //     'ip' => $request->ip(),
-        //     'url' => $request->fullUrl(),
-        //     'method' => $request->method(),
-        // ]);
+        // Log what we found
+        Log::info('🔍 Token resolution', [
+            'from_query' => !empty($request->query('api_key')),
+            'from_bearer' => !empty($request->bearerToken()),
+            'from_custom_header' => !empty($request->header('X-API-KEY')),
+            'token_present' => !empty($token),
+            'country_code' => $countryCode,
+            'token_preview' => $token ? substr($token, 0, 10) . '...' : 'null',
+        ]);
 
         if (!$token) {
             Log::warning('❌ API token missing', [
                 'country_code' => $countryCode,
                 'ip' => $request->ip(),
+                'headers' => $request->headers->all(),
+                'all_params' => $request->all(),
             ]);
             return response()->json([
                 'success' => false,
@@ -50,30 +63,14 @@ class VerifyCountryApiToken
         $envKey = $countryCode . '_API_KEY';
         $validToken = env($envKey);
 
-        // // Log the comparison details
-        // Log::info('🔍 Token comparison', [
-        //     'country_code' => $countryCode,
-        //     'env_key' => $envKey,
-        //     'env_key_exists' => !empty($validToken),
-        //     'env_key_preview' => $validToken ? substr($validToken, 0, 20) . '...' : 'null',
-        //     'token_preview' => substr($token, 0, 20) . '...',
-        //     'token_length' => strlen($token),
-        //     'env_key_length' => $validToken ? strlen($validToken) : 0,
-        //     'matches' => $validToken && hash_equals($validToken, $token),
-        // ]);
-
         if (!$validToken) {
             Log::error('❌ Environment key not found', [
                 'env_key' => $envKey,
                 'country_code' => $countryCode,
-                'available_keys' => array_keys(array_filter($_ENV, function($key) {
-                    return str_ends_with($key, '_API_KEY');
-                }, ARRAY_FILTER_USE_KEY)),
             ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid API token for country: ' . $countryCode,
-                'debug' => 'Environment key ' . $envKey . ' not found'
             ], 401);
         }
 
@@ -81,8 +78,6 @@ class VerifyCountryApiToken
             Log::error('❌ Token mismatch', [
                 'country_code' => $countryCode,
                 'env_key' => $envKey,
-                'token_start' => substr($token, 0, 10),
-                'valid_token_start' => substr($validToken, 0, 10),
                 'token_length' => strlen($token),
                 'valid_token_length' => strlen($validToken),
             ]);
@@ -92,10 +87,10 @@ class VerifyCountryApiToken
             ], 401);
         }
 
-        // Log::info('✅ API token verified successfully', [
-        //     'country_code' => $countryCode,
-        //     'ip' => $request->ip(),
-        // ]);
+        Log::info('✅ API token verified successfully', [
+            'country_code' => $countryCode,
+            'ip' => $request->ip(),
+        ]);
 
         $request->merge(['country_code' => $countryCode]);
 
